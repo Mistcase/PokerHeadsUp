@@ -1,0 +1,8 @@
+*.dll
+*.user
+*.vcxproj
+*.filters
+*.png
+*.jpg
+*.ttf
+Debug

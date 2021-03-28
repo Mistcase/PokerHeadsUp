@@ -1,0 +1,68 @@
+#include "Player.h"
+
+Player::Player()
+{
+	playerString.setFont(*ApplicationFont::GetDefaultFont());
+
+	playerString.setFillColor(sf::Color::Black);
+
+	playerString.setCharacterSize(16);
+
+	//Set all text positions
+	//
+	//
+	//
+	//Set all text positions
+
+	sf::Image chipsImage;
+	if (!chipsImage.loadFromFile("chips.png"))
+	{
+		//Handle error
+	}
+	chipsImage.createMaskFromColor(sf::Color::Black);
+	tChips.loadFromImage(chipsImage);
+	tChips.generateMipmap();
+	chipsSprite.setTexture(&tChips);
+	chipsSprite.setSize(sf::Vector2f(20, 20));
+}
+
+void Player::setNickname(const sf::String& name)
+{
+	this->name = name;
+	playerString.setString(name + ": " + std::to_string(balance));
+
+	setPlayerSlot(playerSlot);
+}
+
+void Player::setPlayerSlot(table_slots::Value slot)
+{
+	this->playerSlot = slot;
+
+	switch (slot)
+	{
+	case table_slots::Value::TOP:
+		playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - playerString.getGlobalBounds().width / 2, 135);
+		chipsSprite.setPosition(playerString.getGlobalBounds().left + playerString.getGlobalBounds().width + 5, 135);
+		break;
+
+	case table_slots::Value::BOTTOM:
+		playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - playerString.getGlobalBounds().width / 2, 450);
+		chipsSprite.setPosition(playerString.getGlobalBounds().left + playerString.getGlobalBounds().width + 5, 450);
+		break;
+
+	default:
+		//Error
+		break;
+	}
+}
+
+const sf::String& Player::getNickname()
+{
+	return name;
+}
+
+void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const
+{
+	target.draw(playerString);
+	target.draw(chipsSprite);
+}
