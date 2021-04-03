@@ -29,7 +29,6 @@ namespace poker_combs
 	};
 }
 
-//Uncorrect class name
 class CombinationIdentifier
 {
 public:

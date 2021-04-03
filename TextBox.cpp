@@ -1,6 +1,13 @@
 #include "TextBox.h"
 
-TextBox::TextBox(sf::Vector2f position, sf::Vector2f size, sf::Color fillColor, sf::Color outlineColor, float outlineThicness, sf::Font* font, sf::Color textColor, unsigned int characterSize)
+TextBox::TextBox(const String & defaultText, const Color & color)
+{
+	this->defaultText.setString(defaultText);
+	this->defaultText.setFillColor(color);
+}
+
+TextBox::TextBox(const Vector2f & position, const Vector2f & size, const Color & fillColor, const Color & outlineColor, float outlineThicness,
+	const String& defaultString, ApplicationFonts::FontType fontType, const Color & textColor, unsigned int characterSize)
 {
 	shape.setPosition(position);
 	shape.setSize(size);
@@ -8,34 +15,32 @@ TextBox::TextBox(sf::Vector2f position, sf::Vector2f size, sf::Color fillColor, 
 	shape.setOutlineColor(outlineColor);
 	shape.setOutlineThickness(outlineThicness);
 
-	text.setFont(*font);
+	text.setFont(ApplicationFonts::getFont(fontType));
 	text.setFillColor(textColor);
 	text.setCharacterSize(characterSize);
-	text.setPosition(shape.getPosition() + sf::Vector2f(1.5f, 0.f));
+	text.setPosition(shape.getPosition() + Vector2f(1.5f, 0.f));
 
-	cursor.setFont(*font);
+	cursor.setFont(ApplicationFonts::getFont(fontType));
 	cursor.setFillColor(textColor);
 	cursor.setCharacterSize(characterSize);
 	cursor.setString(L"_");
-	cursor.setPosition(text.getPosition() + sf::Vector2f(text.getGlobalBounds().width, 0));
+	cursor.setPosition(text.getPosition() + Vector2f(text.getGlobalBounds().width, 0));
 
-    realColor = textColor;
-	//hd.highlightRectangle.setFillColor(sf::Color(0, 50, 120, 150));
+	defaultText.setFont(ApplicationFonts::getFont(fontType));
+	defaultText.setFillColor(Color::White);
+	defaultText.setCharacterSize(characterSize);
+	defaultText.setString(defaultString);
+	defaultText.setPosition(shape.getPosition() + Vector2f(1.5f, 0.f));
 }
 
-void TextBox::setStartText(std::string startText, sf::Color color)
+const String & TextBox::getText() const
 {
-    text.setString(startText);
-    text.setFillColor(color);
+	return displayedString;
 }
 
-void TextBox::setSelection(bool value)
+const Vector2f & TextBox::getPosition() const
 {
-    if (noUsed)
-        text.setString("");
-    noUsed = false;
-	isSelected = value;
-    text.setFillColor(realColor);
+	return shape.getPosition();
 }
 
 void TextBox::update(sf::Vector2f mousePos, float deltaTime)
@@ -43,95 +48,58 @@ void TextBox::update(sf::Vector2f mousePos, float deltaTime)
 	static float time = 0.f;
 	time += deltaTime;
 
-	//UpdateCursor
 	if ((sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)))
-	{
-        if (shape.getGlobalBounds().contains(mousePos.x, mousePos.y))
-        {
-            setSelection(shape.getGlobalBounds().contains(mousePos) ? true : false);
-            if (!vCursor)
-            {
-                cursor.setPosition(text.getPosition() + sf::Vector2f(text.getGlobalBounds().width, 0));
-                vCursor = true;
-            }
-        }
-        else
-            isSelected = false;
-	}
+		isSelected = shape.getGlobalBounds().contains(mousePos);
+
 	if (isSelected && time >= 500.f)
 	{
 		vCursor = !vCursor;
 		if (vCursor)
-			cursor.setPosition(text.getPosition() + sf::Vector2f(text.getGlobalBounds().width, -2.f)); //-2.f -> local value
+			cursor.setPosition(text.getPosition() + Vector2f(text.getGlobalBounds().width, -2.f)); //-2.f -> local value
 		time = 0.f;
 	}
+	else if (!isSelected)
+		vCursor = false;
 }
 
 void TextBox::updateEvent(sf::Event & ev)
 {
-	if (isSelected && !sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
+	if (!isSelected || ev.type != sf::Event::TextEntered)
+		return;
+
+	if (ev.text.unicode != BACKSPACE_TEXT_UNICODE_VALUE)
 	{
-		if (ev.type == sf::Event::TextEntered)
-		{
-			if (ev.text.unicode != 0x08 && ev.text.unicode != 0xD && ev.text.unicode != 96 /*&& text.getString().getSize() <= 64*/)
-			{
-				str += ev.text.unicode;
-				text.setString(str);
-			}
-			else if (ev.text.unicode == 0x08)
-			{
-				if (!str.isEmpty())
-				{
-					str.erase(str.getSize() - 1);
-				}
-				text.setString(str);
-			}
-			vCursor = false;
-		}
+		displayedString += ev.text.unicode;
+		text.setString(displayedString);
 	}
-	else if (ev.type == sf::Event::KeyReleased)
+	else
 	{
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
-		{
-			std::wstring str = L"";
-			if (ev.key.code == sf::Keyboard::Key::V)
-			{
-				str = sf::Clipboard::getString();
-				text.setString(text.getString() + str);
-			}
-		}
+		if (!displayedString.isEmpty())
+			displayedString.erase(displayedString.getSize() - 1);
+
+		text.setString(displayedString);
 	}
+	//If this is not done, the new text will appear on the cursor
+	vCursor = false;
 }
 
 void TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
+	const sf::Text& drawableText = text.getString().isEmpty() && !isSelected ? defaultText : text;
+
 	target.draw(shape, states);
-	target.draw(text, states);
+	target.draw(drawableText, states);
 	if (vCursor)
 		target.draw(cursor);
 }
 
-void TextBox::setText(const std::wstring & str)
-{
-	text.setString(str);
-}
 
-std::wstring TextBox::getText()
-{
-	return noUsed ? L"" : text.getString();
-}
-
-sf::Vector2f TextBox::getPosition()
-{
-	return shape.getPosition();
-}
-
-bool TextBox::selected()
+bool TextBox::selected() const
 {
 	return isSelected;
 }
 
-bool TextBox::empty()
+bool TextBox::empty() const
 {
-	return str.isEmpty();
+	return displayedString.isEmpty();
 }

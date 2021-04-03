@@ -3,7 +3,6 @@
 #define _GAME_STATE_DEFINED_
 
 #include <iostream>
-#include <queue>
 #include <thread>
 #include <memory>
 
@@ -12,6 +11,7 @@
 #include "Settings.h"
 #include "State.h"
 #include "Player.h"
+#include "PokerHand.h"
 
 #include "Button.h"
 
@@ -27,9 +27,7 @@ using netboost::Packet;
 
 using std::string;
 
-const std::string SERVER_ADDRESS = "127.0.0.1:12345";
-
-namespace game_state_mode
+namespace network_mode
 {
 	enum class Value
 	{
@@ -39,7 +37,7 @@ namespace game_state_mode
 	};
 }
 
-class GameState : public State
+class GameState : public State, public Observerable, public Observer
 {
 public:
 	enum ButtonId
@@ -53,11 +51,17 @@ public:
 	};
 
 public:
-	GameState(StatesStack* statesStack, const sf::String& nickName, game_state_mode::Value mode);
+	GameState(StatesStack* statesStack, const sf::String& nickName, network_mode::Value mode);
 	~GameState();
 
 	void update(float deltaTime, sf::Vector2f mousePos) override;
 	void updateSfmlEvent(sf::Event& ev) override;
+
+	//Observer
+	void handleEvent(const ObsMessage& message) override;
+
+	//Observerable
+	void notifyObservers(const ObsMessageString& message = "") override;
 
 protected:
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
@@ -66,6 +70,7 @@ private:
 	void netInit();
 	void guiInit();
 	void sfmlGraphicsInit();
+	void startGame();
 
 	void receiveOpponentNickname();
 	void sendLocalPlayerNameToOpponent();
@@ -77,8 +82,9 @@ private:
 	sf::Texture backgroundTexture, cardShirtTexture;
 	sf::RectangleShape background, myCards[2], oppCards[2];
 	sf::Text pot;
-	Button buttons[BTN_COUNT];
+	Button buttonPrototype, buttons[BTN_COUNT];
 
+private:
 	//Networking
 	const Address serverAddr = Address(SERVER_ADDRESS);
 
@@ -86,10 +92,13 @@ private:
 	TcpClient tcpClient;
 	TcpServer tcpServer;
 	ConnectionDescriptor connectionDescriptor = 0;
-	game_state_mode::Value netMode;
+	network_mode::Value netMode;
 
-	//LocalPlayer
+private:
+	//Data
 	Player localPlayer, opponentPlayer;
+	PokerHand pokerHand;
+	bool gameIsActive = false;
 };
 
 #endif

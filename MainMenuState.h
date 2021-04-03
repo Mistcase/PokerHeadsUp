@@ -20,7 +20,7 @@ public:
 	void update(float deltaTime, sf::Vector2f mousePos) override;
 	void updateSfmlEvent(sf::Event& ev) override;
 
-	void handleEvent(void* subject) override;
+	void handleEvent(const ObsMessage& message) override;
 
 private:
 	void initGui();

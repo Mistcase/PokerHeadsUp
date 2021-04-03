@@ -2,35 +2,47 @@
 #ifndef _TEXTBOX_FILE_INCLUDED_
 #define _TEXTBOX_FILE_INCLUDED_
 
-#include <SFML/Graphics.hpp>
+#include "Types.h"
+#include "Fonts.h"
 
 class TextBox : public sf::Drawable
 {
 public:
 	TextBox() = default;
-	TextBox(sf::Vector2f position, sf::Vector2f size, sf::Color fillColor, sf::Color outlineColor, float outlineThicness,
-            sf::Font* font, sf::Color textColor = sf::Color::White, unsigned int characterSize = 13.f);
+	TextBox(const String& defaultText, const Color& color);
+	TextBox(const Vector2f& position, const Vector2f& size, const Color& fillColor, const Color& outlineColor, float outlineThicness,
+			const String& defaultString = "", ApplicationFonts::FontType fontType = ApplicationFonts::ARIAL, const Color& textColor = Color::White,
+			unsigned int characterSize = 13.f);
 
-    void setStartText(std::string text, sf::Color color);
-	void setSelection(bool value);
+	/*void setPosition(const Vector2f& position);
+	void setSize(const Vector2f& size);
+	void setBackgroundColor(const Color& backColor);
+	void setOutlineColor(const Color& outlineColor);
+	void setTextColor(const Color& textColor);
+	void setOutlineThickness(int value);
+	void setFont(ApplicationFonts::FontType fontType);
+	void setText(const String& str);
+	void setCharacterSize(unsigned int value);*/
 
-	void setText(const std::wstring& str);
-	std::wstring getText();
 
-	sf::Vector2f getPosition();
+	const String& getText() const;
+	const Vector2f& getPosition() const;
+	bool selected() const;
+	bool empty() const;
 
+	//Update loop
 	void update(sf::Vector2f mousePos, float deltaTime);
 	void updateEvent(sf::Event &ev);
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
-	bool selected();
-	bool empty();
-
 private:
 	sf::RectangleShape shape;
-	sf::Text text, cursor;
-    sf::Color realColor;
-	sf::String str;
-	bool isSelected = false, vCursor = false, noUsed = true;
+	sf::Text text, defaultText, cursor;
+    Color backColor;
+	String displayedString;
+	bool isSelected = false, vCursor = false;
+
+private:
+	static const int BACKSPACE_TEXT_UNICODE_VALUE = 0x08;
 };
 #endif

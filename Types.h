@@ -10,9 +10,6 @@
 #include <utility>
 #include <memory>
 
-#include <iostream>
-using namespace std;
-
 using std::vector;
 using std::map;
 using std::array;
@@ -29,6 +26,8 @@ class Card;
 
 typedef pair<Card, Card> PlayerHand;
 typedef array<Card, 5> BoardCards;
+
+typedef unsigned int Balance;
 
 #define CardsContainer(containerType) containerType<Card>
 

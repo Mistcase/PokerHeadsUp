@@ -1,13 +1,13 @@
 #include "GameState.h"
 
-GameState::GameState(StatesStack* statesStack, const sf::String& nickname, game_state_mode::Value netMode)
+GameState::GameState(StatesStack* statesStack, const sf::String& nickname, network_mode::Value netMode)
 {
 	//InitGameRules();
 
-	statesStack = statesStack;
-	netMode = netMode;
+	this->statesStack = statesStack;
+	this->netMode = netMode;
 
-	//LocalPlayer
+	//Players
 	localPlayer.setNickname(nickname);
 	localPlayer.setPlayerSlot(table_slots::BOTTOM);
 
@@ -17,15 +17,16 @@ GameState::GameState(StatesStack* statesStack, const sf::String& nickname, game_
 	netInit();
 	guiInit();
 	sfmlGraphicsInit();
+
+	startGame();
 }
 
 GameState::~GameState()
 {
-	if (netMode == game_state_mode::Value::OPEN_SERVER)
+	if (netMode == network_mode::Value::OPEN_SERVER)
 	{
 		tcpServer.disconnect(connectionDescriptor);
 	}
-	netboost::ReleaseResources();
 }
 
 void GameState::updateSfmlEvent(sf::Event& ev)
@@ -33,15 +34,35 @@ void GameState::updateSfmlEvent(sf::Event& ev)
 
 }
 
+void GameState::handleEvent(const ObsMessage & message)
+{
+	if (message.sender == &localPlayer)
+	{
+		std::cout << message.args << std::endl;
+	}
+	/*if (message.sender == &localPlayer)
+	{
+		std::cout << "LocalPlayer\n";
+	}*/
+}
+
+void GameState::notifyObservers(const ObsMessageString & messageString)
+{
+	ObsMessage message(this, messageString);
+	for (auto& obs : observers)
+		obs->handleEvent(message);
+}
+
 void GameState::netInit()
 {
-	tcpEntity = (netMode == game_state_mode::Value::OPEN_SERVER) ? reinterpret_cast<TcpEntity*>(&tcpServer) :
-		(netMode == game_state_mode::Value::JUST_CONNECT) ? reinterpret_cast<TcpEntity*>(&tcpClient) :
+	//Determine network role
+	tcpEntity = (netMode == network_mode::Value::OPEN_SERVER) ? reinterpret_cast<TcpEntity*>(&tcpServer) :
+		(netMode == network_mode::Value::JUST_CONNECT) ? reinterpret_cast<TcpEntity*>(&tcpClient) :
 		nullptr;
 
 
 	using sf::Uint32;
-	if (netMode == game_state_mode::Value::JUST_CONNECT)
+	if (netMode == network_mode::Value::JUST_CONNECT)
 	{
 		//Connect to server
 		connectionDescriptor = tcpClient.connect(GameState::serverAddr);
@@ -52,9 +73,9 @@ void GameState::netInit()
 
 		sendLocalPlayerNameToOpponent();
 		receiveOpponentNickname();
-
+		gameIsActive = true;
 	}
-	else if (netMode == game_state_mode::Value::OPEN_SERVER)
+	else if (netMode == network_mode::Value::OPEN_SERVER)
 	{
 		//Open server
 		tcpServer = TcpServer(GameState::serverAddr);
@@ -67,18 +88,18 @@ void GameState::netInit()
 		}
 
 		std::thread([&]()
-		{
-				//Waiting for connection...
-			if (!tcpServer.accept(connectionDescriptor))
 			{
+				//Waiting for connection...
+				if (!tcpServer.accept(connectionDescriptor))
+				{
 					//Error
-			}
-			std::cout << "Accept -> thread: " << std::this_thread::get_id() << std::endl;
+				}
+				std::cout << "Accept -> thread: " << std::this_thread::get_id() << std::endl;
 
-			receiveOpponentNickname();
-			sendLocalPlayerNameToOpponent();
-
-		}).detach();
+				receiveOpponentNickname();
+				sendLocalPlayerNameToOpponent();
+				gameIsActive = true;
+			}).detach();
 
 			//Show message (OK!)
 	}
@@ -90,28 +111,36 @@ void GameState::netInit()
 
 void GameState::guiInit()
 {
-	/*for (auto& btn : buttons)
+	//Init button prototype
+	buttonPrototype.setSize(GAMESTATE_BUTTON_SIZE);
+	buttonPrototype.setButtonColor(Color(50, 50, 50, 200), BTN_IDLE);
+	buttonPrototype.setButtonColor(Color(150, 150, 150), BTN_HOVER);
+	buttonPrototype.setButtonColor(Color(20, 20, 20, 200), BTN_PRESSED);
+	buttonPrototype.setFont(ApplicationFonts::ARIAL);
+	buttonPrototype.setTextColor(Color::White);
+	buttonPrototype.setCharacterSize(16);
+
+	//Create buttons
+	for (auto& btn : buttons)
 	{
-		btn = Button(sf::Vector2f(), GAMESTATE_BUTTON_SIZE, L"", sf::Color(50, 50, 50, 200),
-			sf::Color(150, 150, 150), sf::Color(20, 20, 20, 200), ApplicationFonts::getFont(ApplicationFonts::ARIAL), sf::Color::White, 16);
-
+		btn = Button(buttonPrototype);
 		btn.active = false;
-	}*/
+	}
 
-	/*buttons[BTN_CHECK].setText(L"CHECK");
+	buttons[BTN_CHECK].setText(L"CHECK");
 	buttons[BTN_CALL].setText(L"CALL");
 	buttons[BTN_BET].setText(L"BET");
 	buttons[BTN_RAISE].setText(L"RAISE");
-	buttons[BTN_FOLD].setText(L"FOLD");*/
+	buttons[BTN_FOLD].setText(L"FOLD");
 
-	/*buttons[BTN_CHECK].setPosition(findPositionForButton());
+	buttons[BTN_CHECK].setPosition(findPositionForButton());
 	buttons[BTN_CHECK].active = true;
 
 	buttons[BTN_CALL].setPosition(findPositionForButton());
 	buttons[BTN_CALL].active = true;
 
 	buttons[BTN_FOLD].setPosition(findPositionForButton());
-	buttons[BTN_FOLD].active = true;*/
+	buttons[BTN_FOLD].active = true;
 }
 
 void GameState::sfmlGraphicsInit()
@@ -133,6 +162,29 @@ void GameState::sfmlGraphicsInit()
 	pot.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
 	pot.setCharacterSize(16);
 	pot.setString("Pot: 0");
+}
+
+void GameState::startGame()
+{
+	std::thread([&]() {
+		//Wait for opponent
+		while (!gameIsActive)
+			std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+		RingPlayersQueue playersBlindQueue;
+		playersBlindQueue.push(&localPlayer);
+		playersBlindQueue.push(&opponentPlayer);
+
+		while (gameIsActive)
+		{
+			pokerHand = PokerHand(this, playersBlindQueue);
+			pokerHand.addObserver(this);
+			pokerHand.play();
+
+			playersBlindQueue.next();
+		}
+
+	}).detach();
 }
 
 void GameState::receiveOpponentNickname()
@@ -162,6 +214,8 @@ sf::Vector2f GameState::findPositionForButton()
 
 	return result;
 }
+
+
 
 void GameState::update(float deltaTime, sf::Vector2f mousePos)
 {

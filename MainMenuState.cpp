@@ -5,9 +5,7 @@ MainMenuState::MainMenuState(StatesStack* statesStack)
 	this->statesStack = statesStack;
 	initGui();
 
-	/*loginBox = TextBox(sf::Vector2f(310, 290), sf::Vector2f(180, 20), sf::Color(50, 50, 50, 200), sf::Color::White, 1.f,
-		ApplicationFonts::getFont(ApplicationFonts::ARIAL));*/
-	//loginBox.setStartText("Type your nickname here...", sf::Color(150, 150, 150));
+	loginBox = TextBox(Vector2f(310, 290), Vector2f(180, 20), Color(50, 50, 50, 200), Color::White, 1.f, "Enter your Nickname...");
 }
 
 MainMenuState::~MainMenuState()
@@ -19,22 +17,6 @@ void MainMenuState::update(float deltaTime, sf::Vector2f mousePos)
 	loginBox.update(mousePos, deltaTime);
 	btnConnect.update(mousePos);
 	btnCreateGame.update(mousePos);
-
-
-
-	//if (!loginBox.empty())
-	//{
-	//	if (btnConnect.isReleased())
-	//	{
-	//		//btnConnect.reset();
-	//		statesStack->push(new GameState(statesStack, loginBox.getText(), game_state_mode::Value::JUST_CONNECT));
-	//	}
-	//	if (btnCreateGame.isReleased())
-	//	{
-	//		//btnCreateGame.reset();
-	//		statesStack->push(new GameState(statesStack, loginBox.getText(), game_state_mode::Value::OPEN_SERVER));
-	//	}
-	//}
 }
 
 void MainMenuState::updateSfmlEvent(sf::Event& ev)
@@ -47,15 +29,18 @@ void MainMenuState::updateSfmlEvent(sf::Event& ev)
 	}
 }
 
-void MainMenuState::handleEvent(void* subject)
+void MainMenuState::handleEvent(const ObsMessage& message)
 {
-	if (subject == &btnConnect)
+	if (loginBox.getText().isEmpty())
+		return;
+
+	if (message.sender == &btnConnect)
 	{
-		statesStack->push(new GameState(statesStack, loginBox.getText(), game_state_mode::Value::JUST_CONNECT));
+		statesStack->push(new GameState(statesStack, loginBox.getText(), network_mode::Value::JUST_CONNECT));
 	}
-	if (subject == &btnCreateGame)
+	if (message.sender == &btnCreateGame)
 	{
-		statesStack->push(new GameState(statesStack, loginBox.getText(), game_state_mode::Value::OPEN_SERVER));
+		statesStack->push(new GameState(statesStack, loginBox.getText(), network_mode::Value::OPEN_SERVER));
 	}
 }
 
