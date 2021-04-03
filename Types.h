@@ -10,6 +10,9 @@
 #include <utility>
 #include <memory>
 
+#include <iostream>
+using namespace std;
+
 using std::vector;
 using std::map;
 using std::array;
@@ -17,6 +20,7 @@ using std::pair;
 
 using std::shared_ptr;
 
+using sf::Drawable;
 using sf::Color;
 using sf::String;
 using sf::Vector2f;

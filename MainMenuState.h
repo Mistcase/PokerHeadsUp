@@ -3,11 +3,12 @@
 #define _MAIN_MENU_STATE_INCLDUED_
 
 #include "GameState.h"
+#include "Observer.h"
 
 #include "Button.h"
 #include "TextBox.h"
 
-class MainMenuState : public State
+class MainMenuState : public State, public Observer
 {
 public:
 	static sf::Color BACKGROUND_COLOR;
@@ -19,6 +20,8 @@ public:
 	void update(float deltaTime, sf::Vector2f mousePos) override;
 	void updateSfmlEvent(sf::Event& ev) override;
 
+	void handleEvent(void* subject) override;
+
 private:
 	void initGui();
 
@@ -27,7 +30,7 @@ protected:
 
 private:
 	Button buttonProrotype;
-	Button* btnConnect, btnCreateGame;
+	Button btnConnect, btnCreateGame;
 	TextBox loginBox;
 };
 

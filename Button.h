@@ -5,8 +5,9 @@
 #include "Types.h"
 #include "Fonts.h"
 #include "ButtonStates.h"
+#include "Observer.h"
 
-class Button : public sf::Drawable
+class Button : public Drawable, public Observerable
 {
 public:
 	//Initialization
@@ -22,6 +23,9 @@ public:
 	void setFont(ApplicationFonts::FontType fontType);
 	void setCharacterSize(int characterSize);
 	void setFraming(float boundSize, sf::Color boundColor);
+
+	//Observers
+	void notifyObservers() override;
 
 	//Loop functions
 	void update(const Vector2f& mousePos);

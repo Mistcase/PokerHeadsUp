@@ -48,6 +48,12 @@ void Button::setFraming(float boundSize, Color boundColor)
 	buttonShape.setOutlineColor(boundColor);
 }
 
+void Button::notifyObservers()
+{
+	for (auto& obs : observers)
+		obs->handleEvent(this);
+}
+
 void Button::update(const Vector2f& mousePos)
 {
 	if (!active)
@@ -56,8 +62,8 @@ void Button::update(const Vector2f& mousePos)
 	auto stateId = stateContext->update(mousePos, buttonShape.getGlobalBounds().contains(mousePos), sf::Mouse::isButtonPressed(sf::Mouse::Button::Left));
 	buttonShape.setFillColor(colors[stateId]);
 
-	//Observer
-	//Notify subscribers
+	if (stateId == BTN_RELEASED)
+		notifyObservers();
 }
 
 const String & Button::getText() const
