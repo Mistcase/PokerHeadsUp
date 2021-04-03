@@ -2,7 +2,7 @@
 
 netboost::Packet::Packet(packet_size size)
 {
-    this->size = size;
+    size = size;
     ptr = packet_data_ptr(new char[size]);
 }
 

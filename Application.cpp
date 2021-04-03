@@ -21,9 +21,9 @@ void Application::initNetwork()
 void Application::initWindow()
 {
 	//if Windows
-	::ShowWindow(::GetConsoleWindow(), SW_HIDE);
+	::ShowWindow(::GetConsoleWindow(), SW_SHOW);
 
-	window.create(sf::VideoMode(APPLICATION_WINDOW_SIZE.x, APPLICATION_WINDOW_SIZE.y), "LAN Poker Heads UP!", sf::Style::Close);
+	window.create(sf::VideoMode((unsigned)APPLICATION_WINDOW_SIZE.x, (unsigned)APPLICATION_WINDOW_SIZE.y), "LAN Poker Heads UP!", sf::Style::Close);
 	window.setFramerateLimit(60);
 }
 
@@ -85,7 +85,7 @@ void Application::updateState()
 	static sf::Clock clock;
 	int elapsedTime = clock.getElapsedTime().asMilliseconds();
 	clock.restart();
-	states.top()->update(elapsedTime, static_cast<sf::Vector2f>(window.mapPixelToCoords(sf::Mouse::getPosition(window))));
+	states.top()->update(static_cast<float>(elapsedTime), static_cast<sf::Vector2f>(window.mapPixelToCoords(sf::Mouse::getPosition(window))));
 }
 
 void Application::renderState()

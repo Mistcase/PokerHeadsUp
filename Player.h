@@ -5,7 +5,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "Settings.h"
-#include "GameFont.h"
+#include "Fonts.h"
 
 namespace table_slots
 {

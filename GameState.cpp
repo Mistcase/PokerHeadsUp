@@ -4,8 +4,8 @@ GameState::GameState(StatesStack* statesStack, const sf::String& nickname, game_
 {
 	//InitGameRules();
 
-	this->statesStack = statesStack;
-	this->netMode = netMode;
+	statesStack = statesStack;
+	netMode = netMode;
 
 	//LocalPlayer
 	localPlayer.setNickname(nickname);
@@ -90,19 +90,19 @@ void GameState::netInit()
 
 void GameState::guiInit()
 {
-	for (auto& btn : buttons)
+	/*for (auto& btn : buttons)
 	{
 		btn = Button(sf::Vector2f(), GAMESTATE_BUTTON_SIZE, L"", sf::Color(50, 50, 50, 200),
-			sf::Color(150, 150, 150), sf::Color(20, 20, 20, 200), ApplicationFont::GetDefaultFont(), sf::Color::White, 16);
+			sf::Color(150, 150, 150), sf::Color(20, 20, 20, 200), ApplicationFonts::getFont(ApplicationFonts::ARIAL), sf::Color::White, 16);
 
 		btn.active = false;
-	}
+	}*/
 
-	buttons[BTN_CHECK].setText(L"CHECK");
+	/*buttons[BTN_CHECK].setText(L"CHECK");
 	buttons[BTN_CALL].setText(L"CALL");
 	buttons[BTN_BET].setText(L"BET");
 	buttons[BTN_RAISE].setText(L"RAISE");
-	buttons[BTN_FOLD].setText(L"FOLD");
+	buttons[BTN_FOLD].setText(L"FOLD");*/
 
 	/*buttons[BTN_CHECK].setPosition(findPositionForButton());
 	buttons[BTN_CHECK].active = true;
@@ -130,7 +130,7 @@ void GameState::sfmlGraphicsInit()
 	background.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - background.getSize().x / 2,
 		APPLICATION_WINDOW_SIZE.y / 2 - background.getSize().y / 2);
 
-	pot.setFont(*ApplicationFont::GetDefaultFont());
+	pot.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
 	pot.setCharacterSize(16);
 	pot.setString("Pot: 0");
 }

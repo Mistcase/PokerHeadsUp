@@ -5,7 +5,7 @@
 #include <stack>
 #include <string>
 
-#include "GameFont.h"
+#include "Fonts.h"
 
 class State : public sf::Drawable
 {
@@ -15,8 +15,7 @@ public:
     virtual void update(float deltaTime, sf::Vector2f mousePos) = 0;
     virtual void updateSfmlEvent(sf::Event& ev) = 0;
     
-protected:
-    
+protected: 
     sf::RenderWindow* window;
     sf::Text* debugText;
     std::stack<State*>* statesStack;

@@ -19,11 +19,15 @@ public:
 	void update(float deltaTime, sf::Vector2f mousePos) override;
 	void updateSfmlEvent(sf::Event& ev) override;
 
+private:
+	void initGui();
+
 protected:
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
-	Button btnConnect, btnCreateGame;
+	Button buttonProrotype;
+	Button* btnConnect, btnCreateGame;
 	TextBox loginBox;
 };
 

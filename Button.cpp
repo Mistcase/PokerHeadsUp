@@ -1,129 +1,88 @@
 #include "Button.h"
 
-Button::Button(sf::Vector2f position, sf::Vector2f size, const wchar_t* string, sf::Color idleColor, sf::Color hoverColor, sf::Color pressedColor, sf::Font* basicalFont, sf::Color textColor, int characterSize)
+Button::Button(const Button & prototype)
 {
-	this->displayedString.setFont(*basicalFont);
-	this->displayedString.setFillColor(textColor);
-	this->displayedString.setCharacterSize(characterSize);
-	this->displayedString.setString(string);
+	stateContext = shared_ptr<ButtonStateContext>(new ButtonStateContext());
+	colors[BTN_IDLE] = prototype.colors[BTN_IDLE];
+	colors[BTN_HOVER] = prototype.colors[BTN_HOVER];
+	colors[BTN_PRESSED] = prototype.colors[BTN_PRESSED];
 
-	sf::FloatRect dsRect = this->displayedString.getLocalBounds();
-	this->displayedString.setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
+	buttonShape.setSize(prototype.buttonShape.getSize());
+	buttonShape.setFillColor(prototype.buttonShape.getFillColor());
 
-
-	this->colors[BTN_IDLE] = idleColor;
-	this->colors[BTN_HOVER] = hoverColor;
-	this->colors[BTN_PRESSED] = pressedColor;
-
-	this->buttonShape.setPosition(position);
-	this->buttonShape.setSize(size);
-	this->buttonShape.setFillColor(idleColor);
-
-	this->displayedString.setPosition(this->buttonShape.getPosition() + sf::Vector2f(this->buttonShape.getSize().x / 2.f, this->buttonShape.getSize().y / 2.f));
-
-	this->buttonState = ButtonState::BTN_IDLE;
-
-	/*this->extShape = sf::VertexArray(sf::PrimitiveType::Quads, 4);
-	this->extShape[0] = this->buttonShape.getPosition();
-	this->extShape[1] = this->buttonShape.getPosition() + sf::Vector2f(this->buttonShape.getSize().x, 0);
-	this->extShape[2] = this->buttonShape.getPosition() + this->buttonShape.getSize();
-	this->extShape[3] = this->buttonShape.getPosition() + sf::Vector2f(0, this->buttonShape.getSize().y);*/
-
-	//for (size_t i = 0; i < 4; i++)
-		//this->extShape[i].color = sf::Color::Transparent;
+	displayedString.setFont(*prototype.displayedString.getFont());
+	displayedString.setCharacterSize(prototype.displayedString.getCharacterSize());
 }
 
-Button::~Button()
+void Button::setText(const String & newText)
 {
+	displayedString.setString(newText);
+
+	sf::FloatRect dsRect = displayedString.getLocalBounds();
+	displayedString.setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
 }
 
-void Button::loadFont(std::string fileName)
+void Button::setButtonColor(const Color & color, ButtonStateId btnState)
 {
-	this->font.loadFromFile(fileName);
-	this->displayedString.setFont(this->font);
+	colors[btnState] = color;
 }
 
-void Button::setFraming(float boundSize, sf::Color boundColor)
+void Button::setTextColor(const Color & color)
 {
-	this->buttonShape.setOutlineThickness(boundSize);
-	this->buttonShape.setOutlineColor(boundColor);
+	displayedString.setFillColor(color);
 }
 
-void Button::setPointColor(size_t pointIndex, sf::Color newColor)
+void Button::setFont(ApplicationFonts::FontType fontType)
 {
-	this->extShape[pointIndex].color = newColor;
+	displayedString.setFont(ApplicationFonts::getFont(fontType));
 }
 
-void Button::update(const sf::Vector2f mousePos)
+void Button::setCharacterSize(int characterSize)
 {
-	if (active)
-	{
-		bool contains = this->buttonShape.getGlobalBounds().contains(mousePos), pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-
-		if (this->buttonState == BTN_PRESSED)
-		{
-			if (!pressed)
-				this->buttonState = contains ? BTN_RELEASED : BTN_IDLE;
-		}
-		else
-		{
-			this->buttonState = contains ? (pressed ? BTN_PRESSED : BTN_HOVER) : BTN_IDLE;
-		}
-
-		if (this->buttonShape.getFillColor() != this->colors[this->buttonState])
-			this->buttonShape.setFillColor(this->colors[this->buttonState]);
-	}
+	displayedString.setCharacterSize(characterSize);
 }
 
-void Button::setPosition(sf::Vector2f position)
+void Button::setFraming(float boundSize, Color boundColor)
 {
-    sf::FloatRect dsRect = this->displayedString.getLocalBounds();
-    this->displayedString.setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
-    this->buttonShape.setPosition(position);
-    this->displayedString.setPosition(this->buttonShape.getPosition() + sf::Vector2f(this->buttonShape.getSize().x / 2.f, this->buttonShape.getSize().y / 2.f));
+	buttonShape.setOutlineThickness(boundSize);
+	buttonShape.setOutlineColor(boundColor);
 }
 
-void Button::setText(const wchar_t* newString)
+void Button::update(const Vector2f& mousePos)
 {
-    this->displayedString.setString(newString);
+	if (!active)
+		return;
+
+	auto stateId = stateContext->update(mousePos, buttonShape.getGlobalBounds().contains(mousePos), sf::Mouse::isButtonPressed(sf::Mouse::Button::Left));
+	buttonShape.setFillColor(colors[stateId]);
+
+	//Observer
+	//Notify subscribers
 }
 
-void Button::render(sf::RenderTarget * target)
+const String & Button::getText() const
 {
-	if (active)
-	{
-		target->draw(this->buttonShape);
-		target->draw(this->extShape);
-		target->draw(this->displayedString);
-	}
+	return displayedString.getString();
 }
 
-void Button::reset()
+void Button::setSize(const Vector2f & size)
 {
-	this->buttonState = BTN_IDLE;
+	buttonShape.setSize(size);
+}
+
+void Button::setPosition(const Vector2f& position)
+{
+    sf::FloatRect dsRect = displayedString.getLocalBounds();
+    displayedString.setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
+    buttonShape.setPosition(position);
+    displayedString.setPosition(buttonShape.getPosition() + sf::Vector2f(buttonShape.getSize().x / 2.f, buttonShape.getSize().y / 2.f));
 }
 
 void Button::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
-	if (active)
-	{
-		target.draw(this->buttonShape, states);
-		target.draw(this->displayedString, states);
-	}
-}
+	if (!active)
+		return;
 
-const std::wstring Button::getString()
-{
-	std::wstring str = this->displayedString.getString();
-	return str;
-}
-
-const sf::FloatRect Button::getGlobalBounds()
-{
-	return this->buttonShape.getGlobalBounds();
-}
-
-const bool Button::isReleased() const
-{
-	return this->buttonState == BTN_RELEASED;
+	target.draw(buttonShape, states);
+	target.draw(displayedString, states);
 }

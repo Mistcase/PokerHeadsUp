@@ -2,8 +2,8 @@
 
 Card::Card(CardValue value, CardSuit suit)
 {
-	this->value = value;
-	this->suit = suit;
+	value = value;
+	suit = suit;
 }
 
 CardValue Card::getValue()
@@ -18,17 +18,17 @@ CardSuit Card::getSuit()
 
 bool Card::isEaqualValue(const Card& other)
 {
-	return this->value == other.value;
+	return value == other.value;
 }
 
 bool Card::operator==(const Card& other)
 {
-	return this->value == other.value && this->suit == other.suit;
+	return value == other.value && suit == other.suit;
 }
 
 bool Card::operator>(const Card& other)
 {
-	return this->value > other.value;
+	return value > other.value;
 }
 
 ostream& operator<<(ostream& os, const Card& card)

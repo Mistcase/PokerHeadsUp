@@ -2,41 +2,32 @@
 #ifndef _BUTTON_INCLUDED_
 #define _BUTTON_INCLUDED_
 
-#include <SFML/Graphics.hpp>
-
-enum ButtonState : int
-{
-	BTN_IDLE,
-	BTN_HOVER,
-	BTN_PRESSED,
-	BTN_RELEASED,
-};
+#include "Types.h"
+#include "Fonts.h"
+#include "ButtonStates.h"
 
 class Button : public sf::Drawable
 {
 public:
 	//Initialization
 	Button() = default;
-	Button(sf::Vector2f position, sf::Vector2f size, const wchar_t* string, sf::Color idleColor, sf::Color hoverColor, sf::Color pressedColor, sf::Font* basicalFont, sf::Color textColor = sf::Color::White, int characterSize = 12);
-	~Button();
+	Button(const Button& prototype);
 
-	void loadFont(std::string fileName);
-
-	//Functions
+	//Functional
+	void setSize(const Vector2f& size);
+	void setPosition(const Vector2f& position);
+	void setText(const String& newString);
+	void setButtonColor(const Color& color, ButtonStateId btnState);
+	void setTextColor(const Color& color);
+	void setFont(ApplicationFonts::FontType fontType);
+	void setCharacterSize(int characterSize);
 	void setFraming(float boundSize, sf::Color boundColor);
-	void setPointColor(size_t pointIndex, sf::Color newColor);
-    void setPosition(sf::Vector2f position);
-    void setText(const wchar_t* newString);
-    
-	void update(const sf::Vector2f mousePos);
-	void render(sf::RenderTarget* target);
 
-	void reset();
+	//Loop functions
+	void update(const Vector2f& mousePos);
 
 	//Access
-	const std::wstring getString();
-	const sf::FloatRect getGlobalBounds();
-	const bool isReleased() const;
+	const String& getText() const;
 
 	//Open data
 	bool active = true;
@@ -45,14 +36,11 @@ private:
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 	//Data
-	ButtonState buttonState;
+	std::shared_ptr<ButtonStateContext> stateContext;
 
 	sf::RectangleShape buttonShape;
 	sf::Color colors[3];
 	sf::Text displayedString;
-	sf::Font font;
-
-	sf::VertexArray extShape;
 };
 
 #endif

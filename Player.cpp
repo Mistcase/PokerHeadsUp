@@ -2,7 +2,7 @@
 
 Player::Player()
 {
-	playerString.setFont(*ApplicationFont::GetDefaultFont());
+	playerString.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
 
 	playerString.setFillColor(sf::Color::Black);
 
@@ -36,7 +36,7 @@ void Player::setNickname(const sf::String& name)
 
 void Player::setPlayerSlot(table_slots::Value slot)
 {
-	this->playerSlot = slot;
+	playerSlot = slot;
 
 	switch (slot)
 	{

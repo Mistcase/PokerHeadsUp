@@ -2,15 +2,24 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
+#include <SFML/Graphics.hpp>
+
 #include <vector>
 #include <map>
 #include <array>
 #include <utility>
+#include <memory>
 
 using std::vector;
 using std::map;
 using std::array;
 using std::pair;
+
+using std::shared_ptr;
+
+using sf::Color;
+using sf::String;
+using sf::Vector2f;
 
 class Card;
 

@@ -25,7 +25,7 @@ Address::Address(std::string address)
     {
         this->address |= ((atoi(words[i].c_str())) << (8 * (3 - i)));
     }
-    this->port = (unsigned short)(atoi(words[4].c_str()));
+    port = (unsigned short)(atoi(words[4].c_str()));
     initSockAddr();
 }
 
@@ -37,15 +37,15 @@ Address::Address(std::string address, unsigned short port) : Address(address + "
 
 Address::Address(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned short port)
 {
-    this->address = ( a << 24 ) | ( b << 16 ) | ( c << 8 ) | d;
-    this->port = port;
+    address = ( a << 24 ) | ( b << 16 ) | ( c << 8 ) | d;
+    port = port;
     initSockAddr();
 }
 
 Address::Address(unsigned int destination_address, unsigned short destination_port)
 {
-    this->address = destination_address;
-    this->port = destination_port;
+    address = destination_address;
+    port = destination_port;
     initSockAddr();
 }
 
