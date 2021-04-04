@@ -25,7 +25,7 @@ public:
 	void setFraming(float boundSize, sf::Color boundColor);
 
 	//Observers
-	void notifyObservers(const ObsMessageString& message = "") override;
+	void notifyObservers(const EventMessageString& message = "") override;
 
 	//Loop functions
 	void update(const Vector2f& mousePos);

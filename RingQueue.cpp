@@ -30,10 +30,11 @@ bool RingPlayersQueue::haveEaqualsBets()
 {
 	bool result = true;
 	Balance currentBet = playersQueue.front()->getBalance();
-	for (int i = 0; i < playersQueue.size(); i++)
+	for (size_t i = 0; i < playersQueue.size(); i++)
 	{
 		if (playersQueue.front()->getCurrentBet() != currentBet)
 			result = false;
+		this->next();
 	}
 
 	return result;

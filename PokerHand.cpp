@@ -41,7 +41,7 @@ void PokerHand::play()
 		bool betsAreEaqual = players.haveEaqualsBets();
 		while (!(loopEnded && betsAreEaqual))
 		{
-			notifyObservers("MakeDscision" + betsAreEaqual ? " CHECK BET" : " CALL RAISE FOLD");
+			notifyObservers(string("MakeDescision") + (betsAreEaqual ? "CHECK BET" : " CALL RAISE FOLD"));
 			//WaitAnswer
 			system("pause");
 
@@ -49,7 +49,6 @@ void PokerHand::play()
 				loopEnded = true;
 			players.next();
 		}
-
 	}
 }
 

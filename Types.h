@@ -22,6 +22,10 @@ using sf::Color;
 using sf::String;
 using sf::Vector2f;
 
+using sf::Drawable;
+using sf::RenderTarget;
+using sf::RenderStates;
+
 class Card;
 
 typedef pair<Card, Card> PlayerHand;

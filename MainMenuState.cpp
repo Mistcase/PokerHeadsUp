@@ -12,7 +12,7 @@ MainMenuState::~MainMenuState()
 {
 }
 
-void MainMenuState::update(float deltaTime, sf::Vector2f mousePos)
+void MainMenuState::update(float deltaTime, const Vector2f& mousePos)
 {
 	loginBox.update(mousePos, deltaTime);
 	btnConnect.update(mousePos);
@@ -29,7 +29,7 @@ void MainMenuState::updateSfmlEvent(sf::Event& ev)
 	}
 }
 
-void MainMenuState::handleEvent(const ObsMessage& message)
+void MainMenuState::handleEvent(const EventMessage& message)
 {
 	if (loginBox.getText().isEmpty())
 		return;

@@ -3,9 +3,7 @@
 Player::Player()
 {
 	playerString.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
-
 	playerString.setFillColor(sf::Color::Black);
-
 	playerString.setCharacterSize(16);
 
 	//Set all text positions
@@ -56,6 +54,11 @@ void Player::setPlayerSlot(table_slots::Value slot)
 	}
 }
 
+void Player::setPlayerDescision(PlayerDescision desc)
+{
+	action = desc;
+}
+
 void Player::setBalance(Balance balance)
 {
 	this->balance = balance;
@@ -96,6 +99,11 @@ unsigned int Player::getBalance() const
 Balance Player::getCurrentBet() const
 {
 	return currentBet;
+}
+
+Player::PlayerDescision Player::getAction() const
+{
+	return action;
 }
 
 void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const

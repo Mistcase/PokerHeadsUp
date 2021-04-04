@@ -17,10 +17,10 @@ public:
 	MainMenuState(StatesStack* statesStack);
 	~MainMenuState();
 
-	void update(float deltaTime, sf::Vector2f mousePos) override;
+	void update(float deltaTime, const Vector2f& mousePos) override;
 	void updateSfmlEvent(sf::Event& ev) override;
 
-	void handleEvent(const ObsMessage& message) override;
+	void handleEvent(const EventMessage& message) override;
 
 private:
 	void initGui();

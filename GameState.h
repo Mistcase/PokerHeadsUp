@@ -4,14 +4,15 @@
 
 #include <iostream>
 #include <thread>
-#include <memory>
+#include <functional>
 
 #include "CombinationIdentifier.h"
 
 #include "Settings.h"
 #include "State.h"
 #include "Player.h"
-#include "PokerHand.h"
+#include "PokerButton.h"
+#include "PokerServer.h"
 
 #include "Button.h"
 
@@ -26,6 +27,7 @@ using netboost::ConnectionDescriptor;
 using netboost::Packet;
 
 using std::string;
+using std::function;
 
 namespace network_mode
 {
@@ -51,31 +53,34 @@ public:
 	};
 
 public:
-	GameState(StatesStack* statesStack, const sf::String& nickName, network_mode::Value mode);
+	GameState(StatesStack* statesStack, const String& nickName, network_mode::Value mode);
 	~GameState();
 
-	void update(float deltaTime, sf::Vector2f mousePos) override;
+	void update(float deltaTime, const Vector2f& mousePos) override;
 	void updateSfmlEvent(sf::Event& ev) override;
 
 	//Observer
-	void handleEvent(const ObsMessage& message) override;
+	void handleEvent(const EventMessage& message) override;
 
 	//Observerable
-	void notifyObservers(const ObsMessageString& message = "") override;
+	void notifyObservers(const EventMessageString& message = "") override;
 
 protected:
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
-	void netInit();
+	//Updating
+	function<void()> updateNetwork = []() {};
+	void updateGui(const Vector2f& mousePos);
+	void updateGraphicsEntities();
+
+private:
+	//Initialization
+	void playersInit(const String& localPlayerName);
+	void netInit(network_mode::Value networkMode);
 	void guiInit();
 	void sfmlGraphicsInit();
-	void startGame();
-
-	void receiveOpponentNickname();
-	void sendLocalPlayerNameToOpponent();
-
-	sf::Vector2f findPositionForButton();
+	void startServer();
 
 private:
 	//Graphics
@@ -84,21 +89,19 @@ private:
 	sf::Text pot;
 	Button buttonPrototype, buttons[BTN_COUNT];
 
+	PokerButton tableButton;
+
 private:
 	//Networking
 	const Address serverAddr = Address(SERVER_ADDRESS);
 
 	TcpEntity* tcpEntity = nullptr;
-	TcpClient tcpClient;
-	TcpServer tcpServer;
 	ConnectionDescriptor connectionDescriptor = 0;
-	network_mode::Value netMode;
 
 private:
 	//Data
 	Player localPlayer, opponentPlayer;
-	PokerHand pokerHand;
-	bool gameIsActive = false;
+	PokerServer pokerGameServer;
 };
 
 #endif

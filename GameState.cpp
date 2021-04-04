@@ -1,32 +1,18 @@
 #include "GameState.h"
 
-GameState::GameState(StatesStack* statesStack, const sf::String& nickname, network_mode::Value netMode)
+GameState::GameState(StatesStack* statesStack, const sf::String& localPlayerName, network_mode::Value netMode)
 {
-	//InitGameRules();
-
 	this->statesStack = statesStack;
-	this->netMode = netMode;
 
-	//Players
-	localPlayer.setNickname(nickname);
-	localPlayer.setPlayerSlot(table_slots::BOTTOM);
-
-	opponentPlayer.setNickname("Opponent(Not connected!)");
-	opponentPlayer.setPlayerSlot(table_slots::TOP);
-
-	netInit();
+	playersInit(localPlayerName);
+	netInit(netMode);
 	guiInit();
 	sfmlGraphicsInit();
-
-	startGame();
 }
 
 GameState::~GameState()
 {
-	if (netMode == network_mode::Value::OPEN_SERVER)
-	{
-		tcpServer.disconnect(connectionDescriptor);
-	}
+	delete tcpEntity;
 }
 
 void GameState::updateSfmlEvent(sf::Event& ev)
@@ -34,78 +20,182 @@ void GameState::updateSfmlEvent(sf::Event& ev)
 
 }
 
-void GameState::handleEvent(const ObsMessage & message)
+void GameState::handleEvent(const EventMessage& message)
 {
-	if (message.sender == &localPlayer)
+	auto showButtons = [&](const string& buttonsNotation)
 	{
-		std::cout << message.args << std::endl;
+		auto findPositionForButton = [&]()
+		{
+			const sf::Vector2f OFFSET = GAMESTATE_BUTTON_SIZE + sf::Vector2f(5.f, 0);
+
+			size_t activeButtonsCounter = 0;
+			for (auto& btn : buttons)
+			{
+				if (btn.active)
+					activeButtonsCounter++;
+			}
+
+			sf::Vector2f result = APPLICATION_WINDOW_SIZE - sf::Vector2f((OFFSET.x + 5.f) * (activeButtonsCounter + 1), OFFSET.y + 5.f);
+
+			return result;
+		};
+
+		for (auto& btn : buttons)
+			btn.active = false;
+
+		if (buttonsNotation == "None")
+			return;
+
+		if (buttonsNotation == "CHECK_BET")
+		{
+			buttons[BTN_CHECK].setPosition(findPositionForButton());
+			buttons[BTN_CHECK].active = true;
+
+			buttons[BTN_BET].setPosition(findPositionForButton());
+			buttons[BTN_BET].active = true;
+		}
+		else if (buttonsNotation == "CALL_RAISE_FOLD")
+		{
+			buttons[BTN_CALL].setPosition(findPositionForButton());
+			buttons[BTN_CALL].active = true;
+
+			buttons[BTN_RAISE].setPosition(findPositionForButton());
+			buttons[BTN_RAISE].active = true;
+
+			buttons[BTN_FOLD].setPosition(findPositionForButton());
+			buttons[BTN_FOLD].active = true;
+		}
+		else
+		{
+			//Error
+		}
+	};
+
+	if (message.sender == &pokerGameServer)
+	{
+		//Handle Game Server Event
+		if (Notifications::GetNotificationAction(message.args) == "MakeDescision")
+		{
+			auto currentPlayer = pokerGameServer.getCurrentPlayer();
+			if (currentPlayer == &localPlayer)
+			{
+				showButtons(Notifications::GetNotificationArgs(message.args));
+			}
+			else if (currentPlayer == &opponentPlayer)
+			{
+				tcpEntity->write(connectionDescriptor, Packet(message.args.c_str(), message.args.size()));
+			}
+			else
+			{
+				//Error
+			}
+		}
 	}
-	/*if (message.sender == &localPlayer)
+	else if (message.sender == tcpEntity)
 	{
-		std::cout << "LocalPlayer\n";
-	}*/
+		//Handle Network Message
+		if (Notifications::GetNotificationAction(message.args) == "MakeDescision")
+		{
+			showButtons(Notifications::GetNotificationArgs(message.args));
+		}
+		else if (Notifications::GetNotificationAction(message.args) == "ClientAnswer")
+		{
+			/*std::cout << "ClientAnswer: " << Notifications::GetNotificationArgs(message.args) << std::endl;
+			std::cout << "BeforeHandle event: " << pokerGameServer.getPlayersCount() << std::endl;
+			std::cout << "External Server: " << &pokerGameServer << std::endl;*/
+			notifyObservers(message.args);
+		}
+	}
+	else
+	{
+		//Handle buttonEvent
+		string buttonText = static_cast<Button*>(message.sender)->getText().toAnsiString();
+		string answer = Notifications::CreateNofiticationMessage("ClientAnswer", buttonText);
+
+		tcpEntity->write(connectionDescriptor, Packet(answer.c_str(), answer.size()));
+	}
 }
 
-void GameState::notifyObservers(const ObsMessageString & messageString)
+void GameState::notifyObservers(const EventMessageString& messageString)
 {
-	ObsMessage message(this, messageString);
+	EventMessage message(this, messageString);
 	for (auto& obs : observers)
 		obs->handleEvent(message);
 }
 
-void GameState::netInit()
+void GameState::playersInit(const String& localPlayerName)
 {
-	//Determine network role
-	tcpEntity = (netMode == network_mode::Value::OPEN_SERVER) ? reinterpret_cast<TcpEntity*>(&tcpServer) :
-		(netMode == network_mode::Value::JUST_CONNECT) ? reinterpret_cast<TcpEntity*>(&tcpClient) :
-		nullptr;
+	localPlayer.setNickname(localPlayerName);
+	localPlayer.setPlayerSlot(table_slots::BOTTOM);
+	opponentPlayer.setNickname("Opponent(Not connected!)");
+	opponentPlayer.setPlayerSlot(table_slots::TOP);
+}
 
-
-	using sf::Uint32;
-	if (netMode == network_mode::Value::JUST_CONNECT)
+void GameState::netInit(network_mode::Value netMode)
+{
+	auto receiveOpponentNickname = [&]()
 	{
-		//Connect to server
-		connectionDescriptor = tcpClient.connect(GameState::serverAddr);
-		if (connectionDescriptor == netboost::n_codes::ANY_ERROR)
-		{
-			//Error
-		}
-
-		sendLocalPlayerNameToOpponent();
-		receiveOpponentNickname();
-		gameIsActive = true;
-	}
-	else if (netMode == network_mode::Value::OPEN_SERVER)
+		this->opponentPlayer.setNickname(static_cast<const char*>(tcpEntity->readPacket(connectionDescriptor).getData()));
+	};
+	auto sendLocalPlayerName = [&]()
 	{
-		//Open server
-		tcpServer = TcpServer(GameState::serverAddr);
-
-		//Open connection for opponent
-		connectionDescriptor = tcpServer.openConnection();
-		if (connectionDescriptor == netboost::n_codes::ANY_ERROR)
+		auto nickname = localPlayer.getNickname();
+		tcpEntity->write(connectionDescriptor, Packet(string(nickname.toAnsiString() + "\0").c_str(), nickname.getSize() + 1));
+	};
+	auto enableNetworkUpdating = [&]()
+	{
+		updateNetwork = [&]()
 		{
-			//Error
-		}
-
-		std::thread([&]()
+			if (tcpEntity->readable(connectionDescriptor))
+			{
+				//std::cout << "PokerGameServer: " << &pokerGameServer << std::endl;
+				handleEvent(EventMessage(tcpEntity, EventMessageString(static_cast<const char*>(tcpEntity->readPacket(connectionDescriptor).getData()))));
+			}
+		};
+	};
+	auto openTcpServerAsync = [&]()
+	{
+		connectionDescriptor = static_cast<TcpServer*>(tcpEntity)->openConnection();
+		std::thread([this, receiveOpponentNickname, sendLocalPlayerName, enableNetworkUpdating]()
 			{
 				//Waiting for connection...
-				if (!tcpServer.accept(connectionDescriptor))
+				if (!static_cast<TcpServer*>(tcpEntity)->accept(connectionDescriptor))
 				{
 					//Error
 				}
 				std::cout << "Accept -> thread: " << std::this_thread::get_id() << std::endl;
 
 				receiveOpponentNickname();
-				sendLocalPlayerNameToOpponent();
-				gameIsActive = true;
-			}).detach();
+				sendLocalPlayerName();
+				startServer();
+				enableNetworkUpdating();
 
-			//Show message (OK!)
-	}
-	else
+			}).detach();
+	};
+	auto connectToTcpServer = [&]()
 	{
+		connectionDescriptor = static_cast<TcpClient*>(tcpEntity)->connect(GameState::serverAddr);
+
+		sendLocalPlayerName();
+		receiveOpponentNickname();
+		enableNetworkUpdating();
+	};
+
+	switch (netMode)
+	{
+	case network_mode::Value::OPEN_SERVER:
+		tcpEntity = new TcpServer(serverAddr);
+		openTcpServerAsync();
+		break;
+
+	case network_mode::Value::JUST_CONNECT:
+		tcpEntity = new TcpClient();
+		connectToTcpServer();
+		break;
+
+	default:
 		//Error
+		break;
 	}
 }
 
@@ -124,6 +214,7 @@ void GameState::guiInit()
 	for (auto& btn : buttons)
 	{
 		btn = Button(buttonPrototype);
+		btn.addObserver(this);
 		btn.active = false;
 	}
 
@@ -132,15 +223,6 @@ void GameState::guiInit()
 	buttons[BTN_BET].setText(L"BET");
 	buttons[BTN_RAISE].setText(L"RAISE");
 	buttons[BTN_FOLD].setText(L"FOLD");
-
-	buttons[BTN_CHECK].setPosition(findPositionForButton());
-	buttons[BTN_CHECK].active = true;
-
-	buttons[BTN_CALL].setPosition(findPositionForButton());
-	buttons[BTN_CALL].active = true;
-
-	buttons[BTN_FOLD].setPosition(findPositionForButton());
-	buttons[BTN_FOLD].active = true;
 }
 
 void GameState::sfmlGraphicsInit()
@@ -150,7 +232,6 @@ void GameState::sfmlGraphicsInit()
 	if (!backImg.loadFromFile("back.png"))
 	{
 		//Handle error
-		std::cout << "Error\n";
 	}
 	backImg.createMaskFromColor(sf::Color::White);
 	backgroundTexture.loadFromImage(backImg);
@@ -162,69 +243,53 @@ void GameState::sfmlGraphicsInit()
 	pot.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
 	pot.setCharacterSize(16);
 	pot.setString("Pot: 0");
+
+	tableButton.setTableSlot(table_slots::BOTTOM);
 }
 
-void GameState::startGame()
+void GameState::startServer()
 {
-	std::thread([&]() {
-		//Wait for opponent
-		while (!gameIsActive)
-			std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-		RingPlayersQueue playersBlindQueue;
-		playersBlindQueue.push(&localPlayer);
-		playersBlindQueue.push(&opponentPlayer);
-
-		while (gameIsActive)
+	std::thread([&]()
 		{
-			pokerHand = PokerHand(this, playersBlindQueue);
-			pokerHand.addObserver(this);
-			pokerHand.play();
+			RingPlayersQueue playersBlindQueue;
+			playersBlindQueue.push(&localPlayer);
+			playersBlindQueue.push(&opponentPlayer);
 
-			playersBlindQueue.next();
-		}
+			bool gameIsActive = true;
+			while (gameIsActive)
+			{
+				pokerGameServer = PokerServer(playersBlindQueue);
+				this->addObserver(&pokerGameServer);
+				pokerGameServer.addObserver(this);
+				pokerGameServer.start();
 
-	}).detach();
+				playersBlindQueue.next();
+			}
+
+		}).detach();
 }
 
-void GameState::receiveOpponentNickname()
+void GameState::updateGui(const Vector2f& mousePos)
 {
-	Packet packet = tcpEntity->readPacket(connectionDescriptor);
-	opponentPlayer.setNickname(static_cast<const char*>(packet.getData()));
-}
-
-void GameState::sendLocalPlayerNameToOpponent()
-{
-	auto nickname = localPlayer.getNickname();
-	tcpEntity->write(connectionDescriptor, Packet(string(nickname.toAnsiString() + "\0").c_str(), nickname.getSize() + 1));
-}
-
-sf::Vector2f GameState::findPositionForButton()
-{
-	const sf::Vector2f OFFSET = GAMESTATE_BUTTON_SIZE + sf::Vector2f(5.f, 0);
-
-	size_t activeButtonsCounter = 0;
-	for (auto& btn : buttons)
-	{
-		if (btn.active)
-			activeButtonsCounter++;
-	}
-
-	sf::Vector2f result = APPLICATION_WINDOW_SIZE - sf::Vector2f((OFFSET.x + 5.f) * (activeButtonsCounter + 1), OFFSET.y + 5.f);
-
-	return result;
-}
-
-
-
-void GameState::update(float deltaTime, sf::Vector2f mousePos)
-{
-	auto potParams = pot.getGlobalBounds();
-	pot.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - potParams.width / 2, APPLICATION_WINDOW_SIZE.y / 2 - potParams.height / 2);
-
 	//UpdateGui
 	for (auto& btn : buttons)
 		btn.update(mousePos);
+}
+
+void GameState::updateGraphicsEntities()
+{
+	auto potParams = pot.getGlobalBounds();
+	pot.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - potParams.width / 2, APPLICATION_WINDOW_SIZE.y / 2 - potParams.height / 2);
+}
+
+
+void GameState::update(float deltaTime, const Vector2f& mousePos)
+{
+	updateGraphicsEntities();
+	updateGui(mousePos);
+	updateNetwork();
+
+	//std::cout << pokerGameServer.getPlayersCount() << std::endl;
 }
 
 void GameState::draw(sf::RenderTarget& target, sf::RenderStates states) const
@@ -234,8 +299,11 @@ void GameState::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	target.draw(localPlayer, states);
 	target.draw(opponentPlayer, states);
 
+	target.draw(tableButton, states);
+
 	for (auto& btn : buttons)
 	{
 		target.draw(btn, states);
 	}
 }
+

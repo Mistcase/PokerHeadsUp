@@ -1,10 +1,10 @@
 #ifndef State_hpp
 #define State_hpp
 
-#include <SFML/Graphics.hpp>
 #include <stack>
 #include <string>
 
+#include "Types.h"
 #include "Fonts.h"
 
 class State : public sf::Drawable
@@ -12,7 +12,7 @@ class State : public sf::Drawable
 public:
     virtual ~State();
     
-    virtual void update(float deltaTime, sf::Vector2f mousePos) = 0;
+    virtual void update(float deltaTime, const Vector2f& mousePos) = 0;
     virtual void updateSfmlEvent(sf::Event& ev) = 0;
     
 protected: 

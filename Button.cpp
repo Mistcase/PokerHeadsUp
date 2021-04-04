@@ -48,10 +48,10 @@ void Button::setFraming(float boundSize, Color boundColor)
 	buttonShape.setOutlineColor(boundColor);
 }
 
-void Button::notifyObservers(const ObsMessageString& message)
+void Button::notifyObservers(const EventMessageString& message)
 {
 	for (auto& obs : observers)
-		obs->handleEvent(ObsMessage(this));
+		obs->handleEvent(EventMessage(this));
 }
 
 void Button::update(const Vector2f& mousePos)

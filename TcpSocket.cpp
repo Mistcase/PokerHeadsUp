@@ -62,7 +62,7 @@ bool netboost::TcpSocket::readable() const noexcept
     fds.fd = handle;
     fds.events = POLLIN;
     
-    int ret = netboost::poll(&fds, 1, 100);
+    int ret = netboost::poll(&fds, 1, 5);
     return ret != 0;
 }
 
