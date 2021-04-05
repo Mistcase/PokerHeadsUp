@@ -30,7 +30,7 @@ public:
 	void setNickname(const sf::String& name);
 	void setPlayerSlot(table_slots::Value slot);
 
-	void setPlayerDescision(PlayerDescision desc);
+	void setPossibleActions(const string& desc);
 	void setBalance(Balance balance);
 	Balance makeBet(Balance betValue);
 	void zeroCurrentBet();
@@ -38,7 +38,7 @@ public:
 	const sf::String& getNickname() const;
 	Balance getBalance() const;
 	Balance getCurrentBet() const;
-	PlayerDescision getAction() const;
+	bool hasAction(const string& action) const;
 
 protected:
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
@@ -48,7 +48,7 @@ private:
 	sf::String name;
 	Balance balance = PLAYER_START_BALANCE, currentBet = 0;
 	table_slots::Value playerSlot = table_slots::UNKNOWN;
-	PlayerDescision action = UNKNOWN;
+	string possibleActions;
 
 	//Graphics data
 	sf::Text playerString;

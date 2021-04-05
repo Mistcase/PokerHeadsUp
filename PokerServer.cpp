@@ -40,10 +40,14 @@ void PokerServer::start()
 		bool betsAreEaqual = players.haveEaqualsBets();
 		while (!(loopEnded && betsAreEaqual))
 		{
-			notifyObservers(Notifications::CreateNofiticationMessage("MakeDescision", (betsAreEaqual ? "CHECK_BET" : "CALL_RAISE_FOLD")));
+			auto currentPlayer = players.front();
+			auto possiblePlayerActions = (betsAreEaqual ? "CHECK_BET" : "CALL_RAISE_FOLD");
+
+			currentPlayer->setPossibleActions(possiblePlayerActions);
+			notifyObservers(Notifications::CreateNofiticationMessage("MakeDescision", possiblePlayerActions));
 			waitForExternalFeedback(); //External command was handled
 
-			if ((stage == STAGE_PREFLOP && players.front() == bb) || (stage != STAGE_PREFLOP && players.front() == button))
+			if ((stage == STAGE_PREFLOP && currentPlayer == bb) || (stage != STAGE_PREFLOP && currentPlayer == button))
 				loopEnded = true;
 			players.next();
 		}
@@ -52,47 +56,49 @@ void PokerServer::start()
 
 void PokerServer::notifyObservers(const EventMessageString& args)
 {
-	EventMessage message;
-	//message.sender = players.front();
-	message.sender = this;
-	message.args = args;
-
 	for (auto& obs : observers)
-		obs->handleEvent(message);
+		obs->handleEvent(EventMessage(this, args));
 }
 
 void PokerServer::handleEvent(const EventMessage & message)
 {
 	//Asnwer from GameState
-	//Validate it!!!!!!
-	auto action = Notifications::GetNotificationAction(message.args);
-	auto args = Notifications::GetNotificationArgs(message.args);
+	auto messageAction = Notifications::GetNotificationAction(message.args);
 
-	if (action != "ClientAnswer")
+	if (messageAction != "ClientAnswer")
 		return;
 
+	auto playerAction = Notifications::GetNotificationArgs(message.args);
 	auto currentPlayer = players.front();
-	if (args == "CHECK")
+
+	//Validating
+	if (!currentPlayer->hasAction(playerAction))
+	{
+		notifyObservers(Notifications::CreateNofiticationMessage("ReplyingToClientAction", "Fail"));
+		return;
+	}
+
+	if (playerAction == "CHECK")
 	{
 
 	}
-	else if (args == "CALL")
+	else if (playerAction == "CALL")
 	{
 		currentPlayer->makeBet(currentMaxBet - currentPlayer->getCurrentBet());
 	}
-	else if (args == "BET")
+	else if (playerAction == "BET")
 	{
-		Balance betValue = atoi(args.c_str());
+		Balance betValue = atoi(playerAction.c_str());
 		currentPlayer->makeBet(betValue);
 		currentMaxBet = betValue;
 	}
-	else if (args == "RAISE")
+	else if (playerAction == "RAISE")
 	{
 		//Args contins new max bet value
-		currentMaxBet = atoi(args.c_str());
+		currentMaxBet = atoi(playerAction.c_str());
 		currentPlayer->makeBet(currentMaxBet - currentPlayer->getCurrentBet());
 	}
-	else if (args == "FOLD")
+	else if (playerAction == "FOLD")
 	{
 		players.pop();
 	}
@@ -101,11 +107,9 @@ void PokerServer::handleEvent(const EventMessage & message)
 		//Error
 	}
 
-	if (args != "FOLD")
-		players.next();
-
 	//Show changes
-	notifyObservers(Notifications::CreateNofiticationMessage(action, args));
+	currentPlayer->setPossibleActions("");
+	notifyObservers(Notifications::CreateNofiticationMessage("ReplyingToClientAction", "Ok"));
 
 	flagHaveExternalMessage = true;
 }
@@ -113,11 +117,6 @@ void PokerServer::handleEvent(const EventMessage & message)
 const Player* PokerServer::getCurrentPlayer() const
 {
 	return players.front();
-}
-
-int PokerServer::getPlayersCount()
-{
-	return players.size();
 }
 
 void PokerServer::waitForExternalFeedback()

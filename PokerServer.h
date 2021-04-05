@@ -29,7 +29,6 @@ public:
 	void handleEvent(const EventMessage& message) override;
 
 	const Player* getCurrentPlayer() const;
-	int getPlayersCount();
 
 private:
 	void waitForExternalFeedback();

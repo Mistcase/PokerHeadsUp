@@ -90,21 +90,44 @@ void GameState::handleEvent(const EventMessage& message)
 				//Error
 			}
 		}
+		else if (Notifications::GetNotificationAction(message.args) == "ReplyingToClientAction")
+		{
+			auto answer = Notifications::GetNotificationArgs(message.args);
+			if (answer == "Ok")
+			{
+				showButtons("None");
+				tcpEntity->write(connectionDescriptor, Packet(message.args.c_str(), message.args.size()));
+			}
+			else if (answer == "Fail")
+			{
+				//std::cout << "FailMessage!\n";
+			}
+			else
+			{
+				//Error
+			}
+		}
 	}
 	else if (message.sender == tcpEntity)
 	{
+		auto action = Notifications::GetNotificationAction(message.args);
+
 		//Handle Network Message
-		if (Notifications::GetNotificationAction(message.args) == "MakeDescision")
+		if (action == "MakeDescision")
 		{
 			showButtons(Notifications::GetNotificationArgs(message.args));
 		}
-		else if (Notifications::GetNotificationAction(message.args) == "ClientAnswer")
+		else if (action == "ClientAnswer")
 		{
-			/*std::cout << "ClientAnswer: " << Notifications::GetNotificationArgs(message.args) << std::endl;
-			std::cout << "BeforeHandle event: " << pokerGameServer.getPlayersCount() << std::endl;
-			std::cout << "External Server: " << &pokerGameServer << std::endl;*/
 			notifyObservers(message.args);
 		}
+		else if (action == "ReplyingToClientAction")
+		{
+			//Server reacted to localClient action
+			if (Notifications::GetNotificationArgs(message.args) == "Ok")
+				showButtons("None");
+		}
+		
 	}
 	else
 	{

@@ -54,9 +54,9 @@ void Player::setPlayerSlot(table_slots::Value slot)
 	}
 }
 
-void Player::setPlayerDescision(PlayerDescision desc)
+void Player::setPossibleActions(const string& actions)
 {
-	action = desc;
+	possibleActions = actions;
 }
 
 void Player::setBalance(Balance balance)
@@ -101,9 +101,9 @@ Balance Player::getCurrentBet() const
 	return currentBet;
 }
 
-Player::PlayerDescision Player::getAction() const
+bool Player::hasAction(const string& action) const
 {
-	return action;
+	return possibleActions.find(action) != string::npos;
 }
 
 void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const
