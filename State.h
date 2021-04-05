@@ -15,10 +15,13 @@ public:
     virtual void update(float deltaTime, const Vector2f& mousePos) = 0;
     virtual void updateSfmlEvent(sf::Event& ev) = 0;
     
+    bool requireExit();
 protected: 
     sf::RenderWindow* window;
     sf::Text* debugText;
     std::stack<State*>* statesStack;
+
+    bool active = true;
 };
 
 typedef std::stack<State*> StatesStack;

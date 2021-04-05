@@ -2,9 +2,12 @@
 
 Player::Player()
 {
-	playerString.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
-	playerString.setFillColor(sf::Color::Black);
-	playerString.setCharacterSize(16);
+	g_playerString.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
+	g_playerString.setFillColor(sf::Color::Black);
+	g_playerString.setCharacterSize(16);
+
+	g_currentBet.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
+	g_currentBet.setCharacterSize(16);
 
 	//Set all text positions
 	//
@@ -27,7 +30,7 @@ Player::Player()
 void Player::setNickname(const sf::String& name)
 {
 	this->name = name;
-	playerString.setString(name + ": " + std::to_string(balance));
+	g_playerString.setString(name + ": " + std::to_string(balance));
 
 	setPlayerSlot(playerSlot);
 }
@@ -39,13 +42,15 @@ void Player::setPlayerSlot(table_slots::Value slot)
 	switch (slot)
 	{
 	case table_slots::Value::TOP:
-		playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - playerString.getGlobalBounds().width / 2, 135);
-		chipsSprite.setPosition(playerString.getGlobalBounds().left + playerString.getGlobalBounds().width + 5, 135);
+		g_playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - g_playerString.getGlobalBounds().width / 2, 135);
+		chipsSprite.setPosition(g_playerString.getGlobalBounds().left + g_playerString.getGlobalBounds().width + 5, 135);
+		g_currentBet.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - g_currentBet.getGlobalBounds().width / 2, 155);
 		break;
 
 	case table_slots::Value::BOTTOM:
-		playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - playerString.getGlobalBounds().width / 2, 450);
-		chipsSprite.setPosition(playerString.getGlobalBounds().left + playerString.getGlobalBounds().width + 5, 450);
+		g_playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - g_playerString.getGlobalBounds().width / 2, 450);
+		chipsSprite.setPosition(g_playerString.getGlobalBounds().left + g_playerString.getGlobalBounds().width + 5, 450);
+		g_currentBet.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - g_currentBet.getGlobalBounds().width / 2, 425);
 		break;
 
 	default:
@@ -70,6 +75,7 @@ Balance Player::makeBet(Balance betValue)
 	{
 		balance -= betValue;
 		currentBet += betValue;
+		g_currentBet.setString(std::to_string(currentBet));
 		return betValue;
 	}
 	else
@@ -77,6 +83,7 @@ Balance Player::makeBet(Balance betValue)
 		unsigned oldBalance = balance;
 		balance = 0;
 		currentBet += oldBalance;
+		g_currentBet.setString(std::to_string(currentBet));
 		return oldBalance;
 	}
 }
@@ -108,6 +115,7 @@ bool Player::hasAction(const string& action) const
 
 void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
-	target.draw(playerString);
+	target.draw(g_playerString);
 	target.draw(chipsSprite);
+	target.draw(g_currentBet);
 }

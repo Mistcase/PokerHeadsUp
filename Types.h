@@ -21,10 +21,12 @@ using sf::Drawable;
 using sf::Color;
 using sf::String;
 using sf::Vector2f;
+using sf::Vector2u;
 
 using sf::Drawable;
 using sf::RenderTarget;
 using sf::RenderStates;
+using sf::RenderWindow;
 
 class Card;
 

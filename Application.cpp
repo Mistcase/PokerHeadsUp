@@ -82,6 +82,12 @@ void Application::updateState()
 	if (!active)
 		return;
 
+	if (states.top()->requireExit())
+	{
+		delete states.top();
+		states.pop();
+	}
+
 	static sf::Clock clock;
 	int elapsedTime = clock.getElapsedTime().asMilliseconds();
 	clock.restart();

@@ -1,8 +1,12 @@
 #include "Button.h"
 
-Button::Button(const Button & prototype)
+Button::Button()
 {
 	stateContext = shared_ptr<ButtonStateContext>(new ButtonStateContext());
+}
+
+Button::Button(const Button & prototype) : Button()
+{
 	colors[BTN_IDLE] = prototype.colors[BTN_IDLE];
 	colors[BTN_HOVER] = prototype.colors[BTN_HOVER];
 	colors[BTN_PRESSED] = prototype.colors[BTN_PRESSED];
@@ -64,6 +68,11 @@ void Button::update(const Vector2f& mousePos)
 
 	if (stateId == BTN_RELEASED)
 		notifyObservers();
+}
+
+Vector2f Button::getSize() const
+{
+	return buttonShape.getSize();
 }
 
 const String & Button::getText() const

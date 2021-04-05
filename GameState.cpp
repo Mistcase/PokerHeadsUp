@@ -5,6 +5,7 @@ GameState::GameState(StatesStack* statesStack, const sf::String& localPlayerName
 	this->statesStack = statesStack;
 
 	playersInit(localPlayerName);
+
 	netInit(netMode);
 	guiInit();
 	sfmlGraphicsInit();
@@ -159,6 +160,14 @@ void GameState::netInit(network_mode::Value netMode)
 	auto receiveOpponentNickname = [&]()
 	{
 		this->opponentPlayer.setNickname(static_cast<const char*>(tcpEntity->readPacket(connectionDescriptor).getData()));
+		if (localPlayer.getNickname() == opponentPlayer.getNickname())
+		{
+			const string ERROR_NAME_ALREADY_EXISTS = "__Regected__";
+			tcpEntity->write(connectionDescriptor, Packet(ERROR_NAME_ALREADY_EXISTS.c_str(), ERROR_NAME_ALREADY_EXISTS.size() + 1));
+			opponentPlayer.setNickname("Opponent(Not connected!)");
+			return false;
+		}
+		return true;
 	};
 	auto sendLocalPlayerName = [&]()
 	{
@@ -182,17 +191,22 @@ void GameState::netInit(network_mode::Value netMode)
 		std::thread([this, receiveOpponentNickname, sendLocalPlayerName, enableNetworkUpdating]()
 			{
 				//Waiting for connection...
-				if (!static_cast<TcpServer*>(tcpEntity)->accept(connectionDescriptor))
+				bool connectionSuccess = false;
+				while (!connectionSuccess)
 				{
-					//Error
+					if (!static_cast<TcpServer*>(tcpEntity)->accept(connectionDescriptor))
+					{
+						//Error
+					}
+					std::cout << "Accept -> thread: " << std::this_thread::get_id() << std::endl;
+
+					if (receiveOpponentNickname())
+						connectionSuccess = true;
+
+					sendLocalPlayerName();
+					startServer();
+					enableNetworkUpdating();
 				}
-				std::cout << "Accept -> thread: " << std::this_thread::get_id() << std::endl;
-
-				receiveOpponentNickname();
-				sendLocalPlayerName();
-				startServer();
-				enableNetworkUpdating();
-
 			}).detach();
 	};
 	auto connectToTcpServer = [&]()
@@ -201,6 +215,13 @@ void GameState::netInit(network_mode::Value netMode)
 
 		sendLocalPlayerName();
 		receiveOpponentNickname();
+
+		if (opponentPlayer.getNickname() == "__Regected__")
+		{
+			SfmlMessageBox("A player with that name is already at the table").show();
+			active = false;
+		}
+
 		enableNetworkUpdating();
 	};
 

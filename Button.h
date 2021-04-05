@@ -11,7 +11,7 @@ class Button : public Drawable, public Observerable
 {
 public:
 	//Initialization
-	Button() = default;
+	Button();
 	Button(const Button& prototype);
 
 	//Functional
@@ -31,6 +31,7 @@ public:
 	void update(const Vector2f& mousePos);
 
 	//Access
+	Vector2f getSize() const;
 	const String& getText() const;
 
 	//Open data

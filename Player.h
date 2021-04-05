@@ -51,7 +51,7 @@ private:
 	string possibleActions;
 
 	//Graphics data
-	sf::Text playerString;
+	sf::Text g_playerString, g_currentBet;
 	sf::Texture tChips;
 	sf::RectangleShape chipsSprite;
 };

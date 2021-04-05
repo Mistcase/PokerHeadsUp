@@ -1,11 +1,34 @@
 #include "Application.h"
 
+#include "MessageBox.h"
+
 using namespace std;
 
 int main()
 {
 	Application app;
 	app.run();
+
+	//using namespace sf;
+
+	/*RenderWindow window(VideoMode(800, 600), "MainWindow");
+	while (window.isOpen())
+	{
+		Event ev;
+		while (window.pollEvent(ev))
+		{
+			if (ev.type == Event::Closed)
+				window.close();
+			if (ev.type == Event::KeyReleased && ev.key.code == Keyboard::F1)
+				SfmlMessageBox("Sorry, but Total Commander is not found!").show();
+		}
+
+		window.clear();
+
+		window.display();
+	}*/
+
+	//SfmlMessageBox("String").show();
 
 	//InitGameRules();
 

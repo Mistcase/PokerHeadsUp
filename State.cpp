@@ -4,3 +4,8 @@ State::~State()
 {
     
 }
+
+bool State::requireExit()
+{
+    return !active;
+}

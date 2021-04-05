@@ -15,6 +15,7 @@
 #include "PokerServer.h"
 
 #include "Button.h"
+#include "MessageBox.h"
 
 #include "Address.hpp"
 #include "TcpClient.hpp"
