@@ -2,18 +2,30 @@
 
 SfmlMessageBox::SfmlMessageBox(const String& message, const String& title)
 {
-	if (message.getSize() > 64)
+	if (message.getSize() > MAX_MESSAGE_SIZE)
 		return;
 
-	this->message = message;
+	for (int i = 0; i < message.getSize(); i++)
+	{
+		messageStrings[usedStrings - 1] += message[i];
+		if (i / MAX_STRING_SIZE > (usedStrings - 1) && message[i] == ' ')
+			usedStrings++;
+	}
 	this->title = title;
 
-	g_message.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
-	g_message.setCharacterSize(14);
-	g_message.setFillColor(Color::White);
-	g_message.setString(message);
+	float messageHeight = 0;
+	for (int i = 0; i < usedStrings; i++)
+	{
+		g_messageStrings[i].setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
+		g_messageStrings[i].setCharacterSize(14);
+		g_messageStrings[i].setFillColor(Color::White);
+		g_messageStrings[i].setString(messageStrings[i]);
+		messageHeight += g_messageStrings[i].getGlobalBounds().height;
+	}
 
-	auto messageBounds = g_message.getGlobalBounds();
+	auto messageBounds = g_messageStrings[0].getGlobalBounds();
+	messageBounds.height = messageHeight;
+
 	windowSize = Vector2u(messageBounds.width + 20, messageBounds.height + 20);
 
 	if (windowSize.x < 170)
@@ -21,7 +33,7 @@ SfmlMessageBox::SfmlMessageBox(const String& message, const String& title)
 	if (windowSize.y)
 		windowSize.y = 100;
 
-	messageBounds = g_message.getGlobalBounds();
+	 
 
 	Vector2f buttonSize = Vector2f(windowSize.x * 0.65f, windowSize.y * 0.2f);
 	button.setSize(buttonSize);
@@ -36,16 +48,19 @@ SfmlMessageBox::SfmlMessageBox(const String& message, const String& title)
 	button.setPosition(Vector2f(windowSize.x / 2 - buttonSize.x / 2, windowSize.y * 0.75));
 	button.addObserver(this);
 
-	sf::FloatRect dsRect = g_message.getLocalBounds();
-	g_message.setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
-	g_message.setPosition(windowSize.x / 2, windowSize.y / 2.2);
+	for (int i = 0; i < usedStrings; i++)
+	{
+		sf::FloatRect dsRect = g_messageStrings[i].getLocalBounds();
+		g_messageStrings[i].setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
+		g_messageStrings[i].setPosition(windowSize.x / 2, windowSize.y / 2.2 - messageHeight);
+	}
 }
 
-bool SfmlMessageBox::show()
+void SfmlMessageBox::show()
 {
 	using namespace sf;
-	if (message.isEmpty())
-		return false;
+	if (messageStrings[0].isEmpty())
+		return;
 
 	window.create(VideoMode(windowSize.x, windowSize.y), title, Style::Titlebar);
 
@@ -61,12 +76,11 @@ bool SfmlMessageBox::show()
 		button.update(static_cast<sf::Vector2f>(window.mapPixelToCoords(sf::Mouse::getPosition(window))));
 
 		window.clear(Color(40, 40, 40));
-		window.draw(g_message);
+		for (auto i = 0; i < usedStrings; i++)
+			window.draw(g_messageStrings[i]);
 		window.draw(button);
 		window.display();
 	}
-
-	return true;
 }
 
 void SfmlMessageBox::handleEvent(const EventMessage& message)

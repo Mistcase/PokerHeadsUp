@@ -6,12 +6,12 @@ using namespace std;
 
 int main()
 {
-	Application app;
-	app.run();
+	/*Application app;
+	app.run();*/
 
-	//using namespace sf;
+	using namespace sf;
 
-	/*RenderWindow window(VideoMode(800, 600), "MainWindow");
+	RenderWindow window(VideoMode(800, 600), "MainWindow");
 	while (window.isOpen())
 	{
 		Event ev;
@@ -20,13 +20,13 @@ int main()
 			if (ev.type == Event::Closed)
 				window.close();
 			if (ev.type == Event::KeyReleased && ev.key.code == Keyboard::F1)
-				SfmlMessageBox("Sorry, but Total Commander is not found!").show();
+				SfmlMessageBox("Sorry, but Total Commander is not found! AND SOME LONG LONG LONG LONG TEXT").show();
 		}
 
 		window.clear();
 
 		window.display();
-	}*/
+	}
 
 	//SfmlMessageBox("String").show();
 

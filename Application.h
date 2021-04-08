@@ -2,9 +2,9 @@
 #ifndef _APPLICATION_DEFINED_
 #define _APPLICATION_DEFINED_
 
+#include "Types.h"
 #include "MainMenuState.h"
 
-#include <iostream>
 #include <ctime>
 
 class Application
@@ -27,7 +27,7 @@ private:
 private:
 	StatesStack states;
 
-	sf::RenderWindow window;
+	RenderWindow window;
 	bool active = true;
 };
 

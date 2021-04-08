@@ -2,8 +2,7 @@
 *.user
 *.vcxproj
 *.filters
-*.png
-*.jpg
-*.ttf
 Debug
 GuiElement*
+GameRules.h
+GameRules.cpp
