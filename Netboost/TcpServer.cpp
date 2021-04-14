@@ -4,11 +4,11 @@ netboost::TcpServer::TcpServer(const Address& address)
 {
     if (listenSocket.bind(address.getAddress(false).c_str(), address.getPort()) == n_codes::SOCKET_BIND_ERROR)
     {
-        std::cerr << "BIND ERROR: " << address.getAddress(true) << std::endl;
+        throw ConnectionOpeningException("BIND ERROR: " + address.getAddress(true));
     }
     if (listenSocket.listen(SOMAXCONN) != n_codes::SUCCESS)
     {
-        std::cerr << "LISTEN ERROR: " << address.getAddress(true) << std::endl;
+        throw ConnectionOpeningException("LISTEN ERROR: " + address.getAddress(true));
     }
 }
 
@@ -23,7 +23,7 @@ netboost::ConnectionDescriptor netboost::TcpServer::openConnection()
             return i + 1;
         }
     }
-    return 0;
+    return n_codes::ANY_ERROR;
 }
 
 bool netboost::TcpServer::accept(netboost::ConnectionDescriptor descriptor)

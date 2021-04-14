@@ -14,7 +14,7 @@ netboost::Packet::Packet(const void* data, packet_size size, bool readOnly) : Pa
     }
     else
     {
-        ptr = packet_data_ptr(const_cast<void*>(data));
+        ptr = packet_data_ptr((char*)(data));
     }
 }
 
@@ -25,6 +25,5 @@ uint32_t netboost::Packet::getSize() const
 
 const void* netboost::Packet::getData() const
 {
-    //return ptrReadOnly != nullptr ? ptrReadOnly : ptr.get();
-    return ptrReadOnly != nullptr ? ptrReadOnly : ptr;
+    return ptrReadOnly != nullptr ? ptrReadOnly : ptr.get();
 }

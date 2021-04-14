@@ -6,8 +6,7 @@
 #include <memory>
 
 typedef uint32_t packet_size;
-//typedef std::shared_ptr<void> packet_data_ptr;
-typedef void* packet_data_ptr;
+typedef std::shared_ptr<void> packet_data_ptr;
 
 namespace netboost
 {

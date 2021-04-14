@@ -1,11 +1,28 @@
 #ifndef TcpServer_hpp
 #define TcpServer_hpp
 
-#include "Address.hpp"
 #include "TcpEntity.hpp"
+#include "Address.hpp"
 
 namespace netboost
 {
+    class ConnectionOpeningException
+    {
+    private:
+        std::string m_error;
+
+    public:
+        ConnectionOpeningException(std::string error)
+            : m_error(error)
+        {
+        }
+
+        const std::string& what() const noexcept
+        {
+            return m_error;
+        }
+    };
+
 
     class TcpServer : public TcpEntity
     {

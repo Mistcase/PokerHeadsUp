@@ -48,7 +48,7 @@ bool netboost::UdpSocket::setNonBlockMode(bool nonblock)
     {
         //Set blocking mode!
     }
-    return true;
+        return true;
 }
 
 void netboost::UdpSocket::close()

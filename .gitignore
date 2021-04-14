@@ -1,4 +1,11 @@
 *.DS_Store
-build/
-SFML/
+build
+SFML
 *.code-workspace
+*.dll
+*.user
+*.vcxproj
+*.filters
+Debug
+Release
+.vscode

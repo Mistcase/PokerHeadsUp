@@ -3,10 +3,10 @@
 
 #include <array>
 
+#include "netinit.hpp"
+#include "TcpSocket.hpp"
 #include "Address.hpp"
 #include "TcpEntity.hpp"
-#include "TcpSocket.hpp"
-#include "netinit.hpp"
 
 namespace netboost
 {

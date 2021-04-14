@@ -1,8 +1,8 @@
 #ifndef UdpSocket_hpp
 #define UdpSocket_hpp
 
-#include "Socket.hpp"
 #include "netinit.hpp"
+#include "Socket.hpp"
 
 namespace netboost
 {

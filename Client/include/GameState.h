@@ -1,0 +1,96 @@
+#pragma once
+#ifndef _GAME_STATE_DEFINED_
+#define _GAME_STATE_DEFINED_
+
+#include <iostream>
+#include <thread>
+#include <functional>
+
+
+#include "Settings.h"
+#include "State.h"
+#include "Player.h"
+#include "CombinationIdentifier.h"
+#include "PokerButton.h"
+#include "PokerServer.h"
+#include "Button.h"
+#include "MessageBox.h"
+#include "Resources.h"
+#include "NetClient.h"
+
+namespace network_mode
+{
+	enum class Value
+	{
+		UNKNOWN,
+		OPEN_SERVER,
+		JUST_CONNECT
+	};
+}
+
+class GameState : public State, public Observerable, public Observer
+{
+public:
+	enum ButtonId
+	{
+		BTN_CHECK,
+		BTN_BET,
+		BTN_CALL,
+		BTN_RAISE,
+		BTN_FOLD,
+		BTN_COUNT
+	};
+
+public:
+	GameState(StatesStack* statesStack, const String& nickName, network_mode::Value mode);
+	~GameState() override;
+
+	void update(float deltaTime, const Vector2f& mousePos) override;
+	void updateSfmlEvent(sf::Event& ev) override;
+
+	//Observer
+	void handleEvent(const EventMessage& message) override;
+
+	//Observerable
+	void notifyObservers(const EventMessageString& message = "") override;
+
+protected:
+	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+
+private:
+	//Updating
+	void updateNetwork();
+	void updateGui(const Vector2f& mousePos);
+	void updateGraphicsEntities();
+
+	void handleNetworkEvent(const EventMessageString& message);
+	void handleGuiEvent(const EventMessage& message);
+
+private:
+	//Initialization
+	bool playersInit(const String& localPlayerName);
+	bool netInit(network_mode::Value networkMode);
+	bool guiInit();
+	bool sfmlGraphicsInit();
+	//void startServer();
+
+private:
+	//Graphics
+	sf::Texture backgroundTexture, cardShirtTexture;
+	sf::RectangleShape background, myCards[2], oppCards[2];
+	sf::Text pot;
+	Button buttonPrototype, buttons[BTN_COUNT];
+
+	PokerButton tableButton;
+
+private:
+	//Networking
+	NetClient netClient;
+
+private:
+	//Data
+	Player localPlayer, opponentPlayer;
+	PokerServer pokerGameServer;
+};
+
+#endif

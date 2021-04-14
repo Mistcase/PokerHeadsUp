@@ -4,9 +4,9 @@
 #include <array>
 #include <bitset>
 
-#include "Packet.hpp"
-#include "TcpSocket.hpp"
 #include "netinit.hpp"
+#include "TcpSocket.hpp"
+#include "Packet.hpp"
 
 namespace netboost
 {
