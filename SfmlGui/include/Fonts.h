@@ -2,8 +2,9 @@
 #ifndef _GAME_FONT_INCLDUED_
 #define _GAME_FONT_INCLDUED_
 
-#include "Types.h"
 #include "Resources.h"
+
+#include <SFML/Graphics.hpp>
 
 class ApplicationFonts
 {
@@ -19,7 +20,7 @@ public:
 
 private:
 	static sf::Font* fonts[AVAILABLE_FONTS_COUNT];
-	static const AnsiString FONTS_NAMES[AVAILABLE_FONTS_COUNT];
+	static const std::string FONTS_NAMES[AVAILABLE_FONTS_COUNT];
 };
 
 #endif

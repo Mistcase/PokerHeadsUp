@@ -2,9 +2,12 @@
 #ifndef _TEXTBOX_FILE_INCLUDED_
 #define _TEXTBOX_FILE_INCLUDED_
 
-#include "Types.h"
 #include "Fonts.h"
 
+namespace sfml_gui
+{
+
+using namespace sf;
 class TextBox : public sf::Drawable
 {
 public:
@@ -45,4 +48,5 @@ private:
 private:
 	static const int BACKSPACE_TEXT_UNICODE_VALUE = 0x08;
 };
+}
 #endif

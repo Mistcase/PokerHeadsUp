@@ -2,7 +2,9 @@
 #ifndef _RESOURCES_H_
 #define _RESOURCES_H_
 
-#include "Types.h"
+#include <string>
+
+typedef std::string AnsiString;
 
 class Resources
 {

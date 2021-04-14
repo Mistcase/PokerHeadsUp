@@ -2,8 +2,10 @@
 #ifndef _BUTTONS_STATE_H
 #define _BUTTONS_STATE_H
 
-#include "Types.h"
+#include <SFML/Graphics.hpp>
 
+namespace sfml_gui
+{
 enum ButtonStateId : int
 {
 	BTN_IDLE,
@@ -68,10 +70,11 @@ public:
 	~ButtonStateContext();
 
 	void setState(ButtonState* state);
-	ButtonStateId update(const Vector2f& mousePos, bool hoverButton, bool pressed);
+	ButtonStateId update(const sf::Vector2f& mousePos, bool hoverButton, bool pressed);
 
 private:
 	ButtonState* state;
 };
+}
 
 #endif

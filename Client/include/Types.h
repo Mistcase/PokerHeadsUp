@@ -2,14 +2,17 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
-#include <SFML/Graphics.hpp>
+#include "SfmlGui.h"
 
+#include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
 #include <map>
 #include <array>
 #include <utility>
 #include <memory>
+
+using namespace sfml_gui;
 
 using std::vector;
 using std::map;

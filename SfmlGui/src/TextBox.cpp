@@ -1,12 +1,12 @@
 #include "TextBox.h"
 
-TextBox::TextBox(const String & defaultText, const Color & color)
+sfml_gui::TextBox::TextBox(const String & defaultText, const Color & color)
 {
 	this->defaultText.setString(defaultText);
 	this->defaultText.setFillColor(color);
 }
 
-TextBox::TextBox(const Vector2f & position, const Vector2f & size, const Color & fillColor, const Color & outlineColor, float outlineThicness,
+sfml_gui::TextBox::TextBox(const Vector2f & position, const Vector2f & size, const Color & fillColor, const Color & outlineColor, float outlineThicness,
 	const String& defaultString, ApplicationFonts::FontType fontType, const Color & textColor, unsigned int characterSize)
 {
 	shape.setPosition(position);
@@ -33,17 +33,17 @@ TextBox::TextBox(const Vector2f & position, const Vector2f & size, const Color &
 	defaultText.setPosition(shape.getPosition() + Vector2f(1.5f, 0.f));
 }
 
-const String & TextBox::getText() const
+const sf::String & sfml_gui::TextBox::getText() const
 {
 	return displayedString;
 }
 
-const Vector2f & TextBox::getPosition() const
+const sf::Vector2f & sfml_gui::TextBox::getPosition() const
 {
 	return shape.getPosition();
 }
 
-void TextBox::update(sf::Vector2f mousePos, float deltaTime)
+void sfml_gui::TextBox::update(sf::Vector2f mousePos, float deltaTime)
 {
 	static float time = 0.f;
 	time += deltaTime;
@@ -62,7 +62,7 @@ void TextBox::update(sf::Vector2f mousePos, float deltaTime)
 		vCursor = false;
 }
 
-void TextBox::updateEvent(sf::Event & ev)
+void sfml_gui::TextBox::updateEvent(sf::Event & ev)
 {
 	if (!isSelected || ev.type != sf::Event::TextEntered)
 		return;
@@ -83,7 +83,7 @@ void TextBox::updateEvent(sf::Event & ev)
 	vCursor = false;
 }
 
-void TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) const
+void sfml_gui::TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
 	const sf::Text& drawableText = text.getString().isEmpty() && !isSelected ? defaultText : text;
 
@@ -94,12 +94,12 @@ void TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) const
 }
 
 
-bool TextBox::selected() const
+bool sfml_gui::TextBox::selected() const
 {
 	return isSelected;
 }
 
-bool TextBox::empty() const
+bool sfml_gui::TextBox::empty() const
 {
 	return displayedString.isEmpty();
 }

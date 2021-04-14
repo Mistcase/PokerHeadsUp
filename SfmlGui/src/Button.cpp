@@ -1,11 +1,11 @@
 #include "Button.h"
 
-Button::Button()
+sfml_gui::Button::Button()
 {
-	stateContext = shared_ptr<ButtonStateContext>(new ButtonStateContext());
+	stateContext = std::shared_ptr<ButtonStateContext>(new ButtonStateContext());
 }
 
-Button::Button(const Button & prototype) : Button()
+sfml_gui::Button::Button(const Button & prototype) : Button()
 {
 	colors[BTN_IDLE] = prototype.colors[BTN_IDLE];
 	colors[BTN_HOVER] = prototype.colors[BTN_HOVER];
@@ -18,7 +18,7 @@ Button::Button(const Button & prototype) : Button()
 	displayedString.setCharacterSize(prototype.displayedString.getCharacterSize());
 }
 
-void Button::setText(const String & newText)
+void sfml_gui::Button::setText(const String & newText)
 {
 	displayedString.setString(newText);
 
@@ -26,39 +26,39 @@ void Button::setText(const String & newText)
 	displayedString.setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
 }
 
-void Button::setButtonColor(const Color & color, ButtonStateId btnState)
+void sfml_gui::Button::setButtonColor(const Color & color, ButtonStateId btnState)
 {
 	colors[btnState] = color;
 }
 
-void Button::setTextColor(const Color & color)
+void sfml_gui::Button::setTextColor(const Color & color)
 {
 	displayedString.setFillColor(color);
 }
 
-void Button::setFont(ApplicationFonts::FontType fontType)
+void sfml_gui::Button::setFont(ApplicationFonts::FontType fontType)
 {
 	displayedString.setFont(ApplicationFonts::getFont(fontType));
 }
 
-void Button::setCharacterSize(int characterSize)
+void sfml_gui::Button::setCharacterSize(int characterSize)
 {
 	displayedString.setCharacterSize(characterSize);
 }
 
-void Button::setFraming(float boundSize, Color boundColor)
+void sfml_gui::Button::setFraming(float boundSize, Color boundColor)
 {
 	buttonShape.setOutlineThickness(boundSize);
 	buttonShape.setOutlineColor(boundColor);
 }
 
-void Button::notifyObservers(const EventMessageString& message)
+void sfml_gui::Button::notifyObservers(const EventMessageString& message)
 {
 	for (auto& obs : observers)
 		obs->handleEvent(EventMessage(this));
 }
 
-void Button::update(const Vector2f& mousePos)
+void sfml_gui::Button::update(const Vector2f& mousePos)
 {
 	if (!active)
 		return;
@@ -70,17 +70,17 @@ void Button::update(const Vector2f& mousePos)
 		notifyObservers();
 }
 
-const String & Button::getText() const
+const sf::String & sfml_gui::Button::getText() const
 {
 	return displayedString.getString();
 }
 
-void Button::setSize(const Vector2f & size)
+void sfml_gui::Button::setSize(const Vector2f & size)
 {
 	buttonShape.setSize(size);
 }
 
-void Button::setPosition(const Vector2f& position)
+void sfml_gui::Button::setPosition(const Vector2f& position)
 {
     sf::FloatRect dsRect = displayedString.getLocalBounds();
     displayedString.setOrigin(dsRect.left + dsRect.width / 2.f, dsRect.top + dsRect.height / 2.f);
@@ -88,7 +88,7 @@ void Button::setPosition(const Vector2f& position)
     displayedString.setPosition(buttonShape.getPosition() + sf::Vector2f(buttonShape.getSize().x / 2.f, buttonShape.getSize().y / 2.f));
 }
 
-void Button::draw(sf::RenderTarget & target, sf::RenderStates states) const
+void sfml_gui::Button::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
 	if (!active)
 		return;

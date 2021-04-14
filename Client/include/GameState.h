@@ -12,11 +12,11 @@
 #include "Player.h"
 #include "CombinationIdentifier.h"
 #include "PokerButton.h"
-#include "PokerServer.h"
 #include "Button.h"
 #include "MessageBox.h"
 #include "Resources.h"
 #include "NetClient.h"
+#include "Notifications.h"
 
 namespace network_mode
 {
@@ -90,7 +90,7 @@ private:
 private:
 	//Data
 	Player localPlayer, opponentPlayer;
-	PokerServer pokerGameServer;
+	//PokerServer pokerGameServer;
 };
 
 #endif

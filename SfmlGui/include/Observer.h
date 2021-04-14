@@ -2,9 +2,10 @@
 #ifndef _OBSERVER_H_
 #define _OBSERVER_H_
 
-#include "Types.h"
+#include <string>
+#include <vector>
 
-typedef AnsiString EventMessageString;
+typedef std::string EventMessageString;
 
 struct EventMessage
 {
@@ -29,7 +30,7 @@ public:
 	virtual void notifyObservers(const EventMessageString& message = "") = 0;
 
 protected:
-	vector<Observer*> observers;
+	std::vector<Observer*> observers;
 };
 
 #endif

@@ -2,12 +2,16 @@
 #ifndef _BUTTON_INCLUDED_
 #define _BUTTON_INCLUDED_
 
-#include "Types.h"
 #include "Fonts.h"
 #include "ButtonStates.h"
 #include "Observer.h"
 
-class Button : public Drawable, public Observerable
+#include <memory>
+
+namespace sfml_gui
+{
+	using namespace sf;
+	class Button : public Drawable, public Observerable
 {
 public:
 	//Initialization
@@ -22,7 +26,7 @@ public:
 	void setTextColor(const Color& color);
 	void setFont(ApplicationFonts::FontType fontType);
 	void setCharacterSize(int characterSize);
-	void setFraming(float boundSize, sf::Color boundColor);
+	void setFraming(float boundSize, Color boundColor);
 
 	//Observers
 	void notifyObservers(const EventMessageString& message = "") override;
@@ -46,5 +50,6 @@ private:
 	sf::Color colors[3];
 	sf::Text displayedString;
 };
+}
 
 #endif
