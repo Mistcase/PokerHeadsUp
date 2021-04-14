@@ -32,3 +32,8 @@ AnsiString NetClient::receiveMessage()
 {
     return AnsiString(static_cast<const char*>(tcpClient->readPacket(connectionDescriptor).getData()));
 }
+
+void NetClient::disconnect()
+{
+    tcpClient->disconnect(connectionDescriptor);
+}

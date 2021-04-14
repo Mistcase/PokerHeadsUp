@@ -40,4 +40,4 @@ namespace netboost
 
 }
 
-#endif /* TcpServer_hpp */
+#endif

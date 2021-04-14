@@ -10,6 +10,7 @@ GameState::GameState(StatesStack *statesStack, const sf::String &localPlayerName
 
 GameState::~GameState()
 {
+	netClient.disconnect();
 }
 
 void GameState::updateSfmlEvent(sf::Event &ev)

@@ -13,7 +13,7 @@ public:
     void handleMessage(const string& message);
     
 private:
-    void handleNewConnectedPlayer(const stirng& message);
+    void handleNewConnectedPlayer(const string& message);
     void handlePlayerDescision(const string& message);
 };
 

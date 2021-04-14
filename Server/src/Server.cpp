@@ -4,6 +4,7 @@ Server::Server(const string &fullAddr, size_t playersCount)
 {
     try
     {
+        endPointAddr = fullAddr;
         tcpServer = new TcpServer(Address(fullAddr));
 
         for (int i = 0; i < playersCount; i++)
@@ -11,23 +12,25 @@ Server::Server(const string &fullAddr, size_t playersCount)
     }
     catch (const ConnectionOpeningException &e)
     {
-        std::cerr << e.what() << '\n';
+        std::cerr << e.what() << std::endl;
         exit(-1);
     }
 }
 
 void Server::start()
 {
-    for (auto conn : connections)
+    std::cout << "Starting Server: " << endPointAddr.getAddress(true) << std::endl;
+    for (const auto conn : connections)
         tcpServer->accept(conn);
 
     //StartgameLogic server
     while (active)
     {
-        for (auto conn : connections)
+        for (const auto conn : connections)
         {
             if (tcpServer->readable(conn))
-                pokerLogicServer.handleMessage(static_cast<const char*>(tcpServer->readPacket(conn).getData()));
+                std::cout << std::string(static_cast<const char*>(tcpServer->readPacket(conn).getData())) << std::endl;
+                //pokerLogicServer.handleMessage(static_cast<const char*>(tcpServer->readPacket(conn).getData()));
         }
     }
 }

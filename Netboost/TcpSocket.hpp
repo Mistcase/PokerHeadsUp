@@ -9,7 +9,8 @@
 
 namespace netboost
 {
-    class TcpSocket : public BaseSocket{
+    class TcpSocket : public BaseSocket
+    {
     public:
         int bind(const char *ipAdress, int port) noexcept;
 
@@ -32,6 +33,9 @@ namespace netboost
         int receive(void *data, int dataSize) noexcept;
 
         int nativeHandle() const noexcept;
+
+    private:
+        char buffer[4096];
     };
 }
 #endif

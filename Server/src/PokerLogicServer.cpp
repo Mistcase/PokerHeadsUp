@@ -6,7 +6,7 @@ void PokerLogicServer::handleMessage(const string& message)
         handleNewConnectedPlayer(message);
 }
 
-void PokerLogicServer::handleNewConnectedPlayer(const stirng& message)
+void PokerLogicServer::handleNewConnectedPlayer(const string& message)
 {
     //Handle new connection
 }

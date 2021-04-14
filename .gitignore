@@ -1,6 +1,5 @@
 *.DS_Store
 build
-SFML
 *.code-workspace
 *.dll
 *.user

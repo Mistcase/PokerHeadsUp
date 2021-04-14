@@ -5,8 +5,10 @@
 
 #include <TcpServer.hpp>
 
+#include <iostream>
 #include <string>
 #include <vector>
+#include <thread>
 
 using std::vector;
 using std::string;
@@ -27,6 +29,7 @@ public:
 private:
     PokerLogicServer pokerLogicServer;
 
+    Address endPointAddr;
     TcpServer* tcpServer;
     vector<ConnectionDescriptor> connections;
 

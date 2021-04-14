@@ -1,5 +1,7 @@
 #include "TcpSocket.hpp"
 
+#include <iostream>
+
 int netboost::TcpSocket::bind(const char* ipAddress, int port) noexcept
 {
     address = Address(ipAddress, port);
@@ -58,11 +60,15 @@ bool netboost::TcpSocket::connected() const noexcept
 
 bool netboost::TcpSocket::readable() const noexcept
 {
+    if (!connected())
+        return false;
+
     pollfd fds;
     fds.fd = handle;
     fds.events = POLLIN;
     
     int ret = netboost::poll(&fds, 1, 5);
+
     return ret != 0;
 }
 

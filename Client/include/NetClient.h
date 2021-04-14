@@ -15,6 +15,7 @@ public:
     bool sendMessage(const AnsiString& message);
     bool hasMessage() const;
     AnsiString receiveMessage();
+    void disconnect();
 
 private:
     netboost::TcpClient* tcpClient;

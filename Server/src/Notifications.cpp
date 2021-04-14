@@ -1,11 +1,11 @@
 #include "Notifications.h"
 
-EventMessageString Notifications::CreateNofiticationMessage(const AnsiString& action, const AnsiString& args)
+AnsiString Notifications::CreateNofiticationMessage(const AnsiString& action, const AnsiString& args)
 {
 	return "Action:" + action + "/Args:" + args + "/";
 }
 
-EventMessageString Notifications::CreateNofiticationMessage(const AnsiString& action, const vector<AnsiString>& namedArgs)
+AnsiString Notifications::CreateNofiticationMessage(const AnsiString& action, const std::vector<AnsiString>& namedArgs)
 {
 	AnsiString result = ("Action:" + action + "/Args:");
 	for (auto& na : namedArgs)
@@ -13,24 +13,24 @@ EventMessageString Notifications::CreateNofiticationMessage(const AnsiString& ac
 	return result + "/";
 }
 
-EventMessageString Notifications::GetNotificationAction(const EventMessageString& msg)
+AnsiString Notifications::GetNotificationAction(const AnsiString& msg)
 {
 	return GetValueByKey(msg, "Action", '/');
 }
 
-EventMessageString Notifications::GetNotificationArgs(const EventMessageString& msg)
+AnsiString Notifications::GetNotificationArgs(const AnsiString& msg)
 {
 	return GetValueByKey(msg, "Args", '/');
 }
 
-EventMessageString Notifications::GetNotificationNamedArg(const EventMessageString& msg, const AnsiString& key)
+AnsiString Notifications::GetNotificationNamedArg(const AnsiString& msg, const AnsiString& key)
 {
 	return GetValueByKey(GetNotificationArgs(msg), key, '|');
 }
 
-EventMessageString Notifications::GetValueByKey(const EventMessageString& str, const EventMessageString& key, char separator)
+AnsiString Notifications::GetValueByKey(const AnsiString& str, const AnsiString& key, char separator)
 {
-	EventMessageString result;
+	AnsiString result;
 
 	auto pos = str.find(key + ":");
 	if (pos != AnsiString::npos)
