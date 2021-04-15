@@ -4,11 +4,10 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "Types.h"
 #include "Settings.h"
 #include "Fonts.h"
-#include "Cards.h"
 #include "TableSlots.h"
-
 #include "Resources.h"
 
 class Player : public sf::Drawable
@@ -32,30 +31,33 @@ public:
 	void setNickname(const sf::String& name);
 	void setPlayerSlot(table_slots::Value slot);
 
-	void setPlayerDescision(PlayerDescision desc);
 	void setBalance(Balance balance);
-	Balance makeBet(Balance betValue);
-	void zeroCurrentBet();
+	void setBet(Bet betValue);
+	Bet makeBet(Bet betValue);
 
-	const sf::String& getNickname() const;
+	const String& getNickname() const;
 	Balance getBalance() const;
 	Balance getCurrentBet() const;
-	PlayerDescision getAction() const;
+
+	void update();
 
 protected:
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
 	//Player data
-	sf::String name;
+	String name;
 	Balance balance = PLAYER_START_BALANCE, currentBet = 0;
 	table_slots::Value playerSlot = table_slots::UNKNOWN;
 	PlayerDescision action = UNKNOWN;
 
 	//Graphics data
-	sf::Text playerString;
-	sf::Texture tChips;
-	sf::RectangleShape chipsSprite;
+	Text playerString;
+	Texture tChips;
+	RectangleShape chipsSprite;
+
+	//Current Bet
+	Text g_betValue;
 };
 
 #endif

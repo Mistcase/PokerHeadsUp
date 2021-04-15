@@ -2,10 +2,10 @@
 #ifndef _NOTIFICATIONS_H_
 #define _NOTIFICATIONS_H_
 
+#include "Types.h"
+
 #include <string>
 #include <vector>
-
-typedef std::string AnsiString;
 
 
 class Notifications

@@ -19,26 +19,6 @@ void GameState::updateSfmlEvent(sf::Event &ev)
 
 void GameState::handleEvent(const EventMessage &message)
 {
-	// if (message.sender == &pokerGameServer)
-	// {
-	// 	//Handle Game Server Event
-	// 	if (Notifications::GetNotificationAction(message.params) == "MakeDescision")
-	// 	{
-	// 		auto currentPlayer = pokerGameServer.getCurrentPlayer();
-	// 		if (currentPlayer == &localPlayer)
-	// 		{
-	// 			showButtons(Notifications::GetNotificationArgs(message.params));
-	// 		}
-	// 		else if (currentPlayer == &opponentPlayer)
-	// 		{
-	// 			tcpClient->write(connectionDescriptor, Packet(message.params.c_str(), message.params.size()));
-	// 		}
-	// 		else
-	// 		{
-	// 			//Error
-	// 		}
-	// 	}
-	// }
 	if (message.sender == &netClient)
 	{
 		handleNetworkEvent(message.params);
@@ -109,9 +89,9 @@ bool GameState::sfmlGraphicsInit()
 {
 	//Graphics
 	sf::Image backImg;
-	if (!backImg.loadFromFile(Resources::path("back.png")))
+	if (!backImg.loadFromFile(Resources::path("back.png")) || !tableButton.loadFromFile(Resources::path("dealer_button.png")))
 	{
-		SfmlMessageBox("Cannot load background!", "Error").show();
+		SfmlMessageBox("Cannot load resource!", "Error").show();
 		return false;
 	}
 	backImg.createMaskFromColor(sf::Color::White);
@@ -130,32 +110,19 @@ bool GameState::sfmlGraphicsInit()
 	return true;
 }
 
-// void GameState::startServer()
-// {
-// 	std::thread([&]() {
-// 		RingPlayersQueue playersBlindQueue;
-// 		playersBlindQueue.push(&localPlayer);
-// 		playersBlindQueue.push(&opponentPlayer);
-
-// 		bool gameIsActive = true;
-// 		while (gameIsActive)
-// 		{
-// 			pokerGameServer = PokerServer(playersBlindQueue);
-// 			this->addObserver(&pokerGameServer);
-// 			pokerGameServer.addObserver(this);
-// 			pokerGameServer.start();
-
-// 			playersBlindQueue.next();
-// 		}
-// 	}).detach();
-// }
-
 void GameState::updateNetwork()
 {
+	if (!netClient.active())
+	{
+		std::cout << "Server is not available. Exit the program!\n";
+		netClient.disconnect();
+		exit(0);
+	}
+
 	if (!netClient.hasMessage())
 		return;
-	
-	AnsiString message = netClient.receiveMessage();
+
+	AnsiString message = netClient.receiveMessage() + "\0";
 	handleEvent(EventMessage(&netClient, message));
 }
 
@@ -174,6 +141,8 @@ void GameState::updateGraphicsEntities()
 
 void GameState::handleNetworkEvent(const EventMessageString &message)
 {
+	std::cout << "Update message -> " << message << std::endl;
+
 	auto showButtons = [&](const AnsiString &buttonsNotation) {
 		auto findPositionForButton = [&]() {
 			const sf::Vector2f OFFSET = GAMESTATE_BUTTON_SIZE + sf::Vector2f(5.f, 0);
@@ -220,43 +189,106 @@ void GameState::handleNetworkEvent(const EventMessageString &message)
 			//Error
 		}
 	};
-	auto toInt = [](const AnsiString& str){return atoi(str.c_str());};
+	auto toInt = [](const AnsiString &str) { return atoi(str.c_str()); };
 
-	if (Notifications::GetNotificationAction(message) == "PlayersInfo")
+	AnsiString action = Notifications::GetNotificationAction(message);
+	if (action == "PlayersInfo")
 	{
 		//Occurs when a player connects. Players information is received by each client
-		int playersCount = toInt(Notifications::GetNotificationNamedArg(message, "count"));
+		int playersCount = toInt(Notifications::GetNotificationNamedArg(message, "PlayersCount"));
 
-		//This is heads up version
-		if (playersCount != 2) //Error
-			SfmlMessageBox("Game version: HeadUp! Player count = " + std::to_string(playersCount), "Network event handling error");
-
-		vector<AnsiString> players;
+		vector<AnsiString> players(playersCount);
 		for (int i = 0; i < playersCount; i++)
 		{
 			players[i] = Notifications::GetNotificationNamedArg(message, "player" + std::to_string(i));
 			if (players[i] != localPlayer.getNickname())
+			{
 				opponentPlayer.setNickname(players[i]);
+				std::cout << "Opponent nickname: " << players[i] << std::endl;
+			}
+		}
+	}
+	else if (action == "StartGame")
+	{
+		std::cout << "Game Started!\n";
+		//This is heads up version
+		// int playersCount = toInt(Notifications::GetNotificationNamedArg(message, "PlayersCount"));
+		// if (playersCount != 2) //Error
+		// 	SfmlMessageBox("Game version: HeadUp! Player count = " + std::to_string(playersCount), "Network event handling error").show();
+	}
+	else if (action == "StartHand")
+	{
+		AnsiString player = Notifications::GetNotificationNamedArg(message, "button");
+		if (player == localPlayer.getNickname())
+		{
+			tableButton.setTableSlot(table_slots::BOTTOM);
+		}
+		else if (player == opponentPlayer.getNickname())
+		{
+			tableButton.setTableSlot(table_slots::TOP);
+		}
+		else
+		{
+			//Error
+			SfmlMessageBox("Button player is unknown: " + player, "Exception!").show();
 		}
 
+		AnsiString sbp = Notifications::GetNotificationNamedArg(message, "sbp"),
+				   bbp = Notifications::GetNotificationNamedArg(message, "bbp"),
+				   sbv = Notifications::GetNotificationNamedArg(message, "sbv");
+
+		int smallBlind = atoi(sbv.c_str());
+		
+		Player* sbPlayer = getPlayer(sbp);
+		Player* bbPlayer = getPlayer(bbp);
+
+		sbPlayer->makeBet(smallBlind);
+		bbPlayer->makeBet(2 * smallBlind);
 	}
-	else if (Notifications::GetNotificationAction(message) == "MakeDescision")
+	else if (action == "MakeDescision")
 	{
-		showButtons(Notifications::GetNotificationArgs(message));
+		if (Notifications::GetNotificationNamedArg(message, "player") == localPlayer.getNickname())
+			showButtons(Notifications::GetNotificationNamedArg(message, "ButtonMode"));
 	}
-	else if (Notifications::GetNotificationAction(message) == "ClientAnswer")
+	else if (action == "ClientAnswer")
 	{
 		notifyObservers(message);
 	}
+	else if (action == "HideGui")
+	{
+		showButtons("None");
+	}
+	else if (action == "PlayerStackInfo")
+	{
+		Balance playerBalance = atoi(Notifications::GetNotificationNamedArg(message, "Balance").c_str());
+		Balance betValue = atoi(Notifications::GetNotificationNamedArg(message, "Bet").c_str());
+
+		Player* player = getPlayer(Notifications::GetNotificationNamedArg(message, "Player"));
+		player->setBalance(playerBalance);
+		player->setBet(betValue);
+	}
+	else
+	{
+		std::cout << "Unknown message: " << message << std::endl;
+	}
+}
+
+Player *GameState::getPlayer(const AnsiString &nickname) const
+{
+	if (localPlayer.getNickname() == nickname)
+		return (Player *)(&localPlayer);
+	else if (opponentPlayer.getNickname() == nickname)
+		return (Player *)(&opponentPlayer);
+	else
+		return nullptr;
 }
 
 void GameState::handleGuiEvent(const EventMessage &message)
 {
 	//Handle buttonEvent
-	AnsiString buttonText = static_cast<Button*>(message.sender)->getText().toAnsiString();
-	AnsiString answer = Notifications::CreateNofiticationMessage("ClientAnswer", buttonText);
-
-	//tcpClient->write(connectionDescriptor, Packet(answer.c_str(), answer.size()));
+	AnsiString buttonText = static_cast<Button *>(message.sender)->getText().toAnsiString();
+	AnsiString answer = Notifications::CreateNofiticationMessage("ClientDescision", buttonText);
+	netClient.sendMessage(answer);
 }
 
 void GameState::update(float deltaTime, const Vector2f &mousePos)
@@ -264,6 +296,9 @@ void GameState::update(float deltaTime, const Vector2f &mousePos)
 	updateGraphicsEntities();
 	updateGui(mousePos);
 	updateNetwork();
+
+	localPlayer.update();
+	opponentPlayer.update();
 
 	//std::cout << pokerGameServer.getPlayersCount() << std::endl;
 }

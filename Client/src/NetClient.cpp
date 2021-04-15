@@ -28,6 +28,11 @@ bool NetClient::hasMessage() const
     return tcpClient->readable(connectionDescriptor);
 }
 
+bool NetClient::active() const
+{
+    return tcpClient->active(connectionDescriptor);
+}
+
 AnsiString NetClient::receiveMessage()
 {
     return AnsiString(static_cast<const char*>(tcpClient->readPacket(connectionDescriptor).getData()));

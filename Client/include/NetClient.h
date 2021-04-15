@@ -14,6 +14,7 @@ public:
     bool connect(const netboost::Address& serverAddr);
     bool sendMessage(const AnsiString& message);
     bool hasMessage() const;
+    bool active() const;
     AnsiString receiveMessage();
     void disconnect();
 

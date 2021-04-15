@@ -2,14 +2,18 @@
 #ifndef _COMBINATION_IDENTIFIER_INCLUDED_
 #define _COMBINATION_IDENTIFIER_INCLUDED_
 
-#include <algorithm>
-
-#include "Types.h"
 #include "Cards.h"
+
+#include <algorithm>
+#include <vector>
 
 using std::find;
 using std::find_if;
 using std::sort;
+using std::vector;
+
+constexpr unsigned int STRAIGHT_POSSIBLE_VARIATIONS_COUNT = 10;
+constexpr unsigned int STRAIGHT_CARDS_COUNT = 5;
 
 namespace poker_combs
 {

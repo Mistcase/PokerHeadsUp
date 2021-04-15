@@ -1,6 +1,6 @@
 #include "TcpEntity.hpp"
 
-bool netboost::TcpEntity::active(netboost::ConnectionDescriptor descriptor)
+bool netboost::TcpEntity::active(netboost::ConnectionDescriptor descriptor) const
 {
     int index = descriptor - 1;
     if ((index < 0) || !(sockMask & (1ULL << index)))
@@ -9,7 +9,7 @@ bool netboost::TcpEntity::active(netboost::ConnectionDescriptor descriptor)
 }
 
 
-bool netboost::TcpEntity::readable(netboost::ConnectionDescriptor descriptor)
+bool netboost::TcpEntity::readable(netboost::ConnectionDescriptor descriptor) const
 {
     int index = descriptor - 1;
     return ((index < 0 || index >= 64) || !(sockMask & (1ULL << index))) ? false : sockets.at(index)->readable();

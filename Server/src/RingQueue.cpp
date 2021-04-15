@@ -1,41 +1,67 @@
 #include "RingQueue.h"
 
-void RingPlayersQueue::push(Player* player)
+void PlayersRingQueue::push(Player *newPlayer)
 {
-	playersQueue.push(player);
+    players.emplace_back(newPlayer);
 }
 
-void RingPlayersQueue::next()
+Player *PlayersRingQueue::front() const
 {
-	playersQueue.push(playersQueue.front());
-	playersQueue.pop();
+    return players.front();
 }
 
-void RingPlayersQueue::pop()
+Player *PlayersRingQueue::next() const
 {
-	playersQueue.pop();
+    if (!players.size())
+        return nullptr;
+    
+    return (players.size() > 1) ? players[1] : players.front();
+}   
+
+void PlayersRingQueue::pop()
+{
+    players.emplace_back(players.front());
+    players.erase(players.begin());
 }
 
-Player * RingPlayersQueue::front() const
+void PlayersRingQueue::deleteFront()
 {
-	return playersQueue.front();
+    players.erase(players.begin());
 }
 
-size_t RingPlayersQueue::size() const
+bool PlayersRingQueue::playerExists(const AnsiString& name) const
 {
-	return playersQueue.size();
+    return std::find_if(players.cbegin(), players.cend(), [&name](const Player* player){ return player->getNickname() == name; }) != players.cend();
 }
 
-bool RingPlayersQueue::haveEaqualsBets()
-{
-	bool result = true;
-	Balance currentBet = playersQueue.front()->getBalance();
-	for (size_t i = 0; i < playersQueue.size(); i++)
-	{
-		if (playersQueue.front()->getCurrentBet() != currentBet)
-			result = false;
-		this->next();
-	}
+ bool PlayersRingQueue::allBetsAreEaqual() const
+ {
+     Balance bet = players.front()->getCurrentBet();
+     for (const auto& player : players)
+     {
+         if (player->getCurrentBet() != bet)
+            return false;
+     }
+     return true;
+ }
 
-	return result;
+size_t PlayersRingQueue::activePlayersCount() const
+{
+    size_t result = 0;
+    for (const auto& player : players)
+    {
+        if (player->isActive())
+            result++;
+    }
+    return result;
+}
+
+size_t PlayersRingQueue::size() const
+{
+    return players.size();
+}
+
+const vector<Player*>& PlayersRingQueue::getPlayersData() const
+{
+    return players;
 }

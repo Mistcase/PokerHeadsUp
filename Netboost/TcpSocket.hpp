@@ -35,7 +35,7 @@ namespace netboost
         int nativeHandle() const noexcept;
 
     private:
-        char buffer[4096];
+        bool m_connected = false;
     };
 }
 #endif

@@ -9,10 +9,13 @@ set(SOURCES_DIRECTORY "src")
 
 set(HEADERS
         ${INCLUDE_DIRECTORY}/Server.h ${INCLUDE_DIRECTORY}/PokerLogicServer.h ${INCLUDE_DIRECTORY}/Player.h
-        ${INCLUDE_DIRECTORY}/RingQueue.h ${INCLUDE_DIRECTORY}/Notifications.h)
+        ${INCLUDE_DIRECTORY}/RingQueue.h ${INCLUDE_DIRECTORY}/Notifications.h ${INCLUDE_DIRECTORY}/Cards.h
+        ${INCLUDE_DIRECTORY}/CombinationIdentifier.h ${INCLUDE_DIRECTORY}/Deck.h ${INCLUDE_DIRECTORY}/Observer.h)
 set(SOURCES
         ${SOURCES_DIRECTORY}/main.cpp ${SOURCES_DIRECTORY}/Server.cpp ${SOURCES_DIRECTORY}/PokerLogicServer.cpp
-        ${SOURCES_DIRECTORY}/Player.cpp ${SOURCES_DIRECTORY}/RingQueue ${SOURCES_DIRECTORY}/Notifications.cpp)
+        ${SOURCES_DIRECTORY}/Player.cpp ${SOURCES_DIRECTORY}/RingQueue.cpp ${SOURCES_DIRECTORY}/Notifications.cpp
+        ${SOURCES_DIRECTORY}/Cards.cpp ${SOURCES_DIRECTORY}/CombinationIdentifier.cpp ${SOURCES_DIRECTORY}/Deck.cpp
+        ${SOURCES_DIRECTORY}/Observer.cpp)
 
 add_library(Netboost STATIC IMPORTED)
 set_property(TARGET Netboost PROPERTY

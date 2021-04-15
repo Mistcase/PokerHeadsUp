@@ -1,7 +1,5 @@
 #include "TcpSocket.hpp"
 
-#include <iostream>
-
 int netboost::TcpSocket::bind(const char* ipAddress, int port) noexcept
 {
     address = Address(ipAddress, port);
@@ -24,6 +22,7 @@ netboost::TcpSocket netboost::TcpSocket::accept() noexcept
     TcpSocket newhandle;
     socklen_t addrSize = sizeof(sockaddr_in);
     newhandle.handle = ::accept(handle, (sockaddr*)address.getSockAddr(), &addrSize);
+    newhandle.m_connected = true;
     return newhandle;
 }
 
@@ -34,7 +33,11 @@ int netboost::TcpSocket::connect(const char* ipAddress, int port) noexcept
         return netboost::n_codes::SOCKET_CREATION_ERROR;
 
     address = Address(ipAddress, port);
-    return (::connect(handle, (sockaddr*)address.getSockAddr(), sizeof(sockaddr_in)) < 0) ? netboost::n_codes::CONNECTION_FAILED : netboost::n_codes::SUCCESS;
+
+    int cresult = (::connect(handle, (sockaddr*)address.getSockAddr(), sizeof(sockaddr_in)) < 0) ? netboost::n_codes::CONNECTION_FAILED : netboost::n_codes::SUCCESS;
+    m_connected = (cresult == n_codes::SUCCESS);
+
+    return cresult;
 }
 
 int netboost::TcpSocket::connect(const Address& address) noexcept
@@ -55,7 +58,7 @@ void netboost::TcpSocket::disconnect() const noexcept
 
 bool netboost::TcpSocket::connected() const noexcept
 {
-    return true;
+    return m_connected;
 }
 
 bool netboost::TcpSocket::readable() const noexcept
@@ -80,7 +83,12 @@ int netboost::TcpSocket::send(void* data, size_t dataSize) noexcept
 
 int netboost::TcpSocket::receive(void* buffer, int dataSize) noexcept
 {
-    return ::recv(handle, (char*)buffer, dataSize, 0);
+    int rres = ::recv(handle, (char*)buffer, dataSize, 0);
+
+    if (rres <= 0)
+        m_connected = false;
+
+    return rres;
 }
 
 int netboost::TcpSocket::nativeHandle() const noexcept

@@ -8,16 +8,16 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <thread>
 
 using std::vector;
 using std::string;
+using netboost::Packet;
 using netboost::Address;
 using netboost::TcpServer;
 using netboost::ConnectionDescriptor;
 using netboost::ConnectionOpeningException;
 
-class Server
+class Server : public Observer
 {
 public:
     Server(Server&) = delete;
@@ -25,6 +25,12 @@ public:
 
     Server(const string& fullAddr, size_t playersCount);
     void start();
+
+    void handleEvent(const EventMessage& message) override;
+    
+private:
+    void sendMessage(ConnectionDescriptor connection, const AnsiString& message);
+    void sendMessageToAll(const AnsiString& message);
 
 private:
     PokerLogicServer pokerLogicServer;

@@ -12,9 +12,9 @@ namespace netboost
 {
     class TcpEntity{
     public:
-        bool active(ConnectionDescriptor descriptor);
+        bool active(ConnectionDescriptor descriptor) const;
 
-        bool readable(ConnectionDescriptor descriptor);
+        bool readable(ConnectionDescriptor descriptor) const;
 
         template <class T>
         size_t write(ConnectionDescriptor descriptor, const T& data, int dataSize = sizeof(T));

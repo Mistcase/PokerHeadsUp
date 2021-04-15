@@ -4,9 +4,15 @@
 
 #include "Types.h"
 
+#include <iostream>
 #include <map>
+#include <string>
+#include <utility>
+#include <array>
 
 using std::ostream;
+using std::pair;
+using std::array;
 
 enum CardValue : int
 {
@@ -62,5 +68,10 @@ private:
 	CardValue value = VALUE_UNKNOWN;
 	CardSuit suit = SUIT_UNKNOWN;
 };
+
+typedef pair<Card, Card> PlayerHand;
+typedef array<Card, 5> BoardCards;
+
+#define CardsContainer(containerType) containerType<Card>
 
 #endif

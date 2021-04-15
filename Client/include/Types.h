@@ -31,17 +31,8 @@ using sf::RenderTarget;
 using sf::RenderStates;
 using sf::RenderWindow;
 
-class Card;
-
-typedef pair<Card, Card> PlayerHand;
-typedef array<Card, 5> BoardCards;
-
 typedef unsigned int Balance;
+typedef unsigned int Bet;
 typedef std::string AnsiString;
-
-#define CardsContainer(containerType) containerType<Card>
-
-const unsigned int STRAIGHT_POSSIBLE_VARIATIONS_COUNT = 10;
-const unsigned int STRAIGHT_CARDS_COUNT = 5;
 
 #endif

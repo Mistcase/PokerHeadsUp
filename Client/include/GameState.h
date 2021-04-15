@@ -10,7 +10,6 @@
 #include "Settings.h"
 #include "State.h"
 #include "Player.h"
-#include "CombinationIdentifier.h"
 #include "PokerButton.h"
 #include "Button.h"
 #include "MessageBox.h"
@@ -58,6 +57,10 @@ protected:
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
+	//Functional
+	Player* getPlayer(const AnsiString& nickname) const;
+
+private:
 	//Updating
 	void updateNetwork();
 	void updateGui(const Vector2f& mousePos);
@@ -72,7 +75,6 @@ private:
 	bool netInit(network_mode::Value networkMode);
 	bool guiInit();
 	bool sfmlGraphicsInit();
-	//void startServer();
 
 private:
 	//Graphics
@@ -90,7 +92,6 @@ private:
 private:
 	//Data
 	Player localPlayer, opponentPlayer;
-	//PokerServer pokerGameServer;
 };
 
 #endif

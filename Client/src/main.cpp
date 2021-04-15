@@ -6,15 +6,8 @@ using namespace std;
 
 int main()
 {
-	//cout << Notifications::GetNotificationArgs("Action:123/Args:player1:nickname1/") << endl;
-	//cout << Notifications::GetNotificationNamedArg("Action:123/Args:player1:nickname1|player2:nickname2|/", "player1") << endl;
-	//vector<const AnsiString> args = {"nick1:killer12312341", "nick2:pasha228"};
-	//cout << Notifications::CreateNofiticationMessage("CoolAction", args) << endl;
-
 	Application app;
 	app.run();
-
-
 
 	//cout << Resources::path("Arial.ttf") << endl;
 
