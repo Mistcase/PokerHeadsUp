@@ -29,6 +29,12 @@ void PlayersRingQueue::deleteFront()
     players.erase(players.begin());
 }
 
+void PlayersRingQueue::zeroAllBets()
+{
+    for (auto& player : players)
+        player->zeroCurrentBet();
+}
+
 bool PlayersRingQueue::playerExists(const AnsiString& name) const
 {
     return std::find_if(players.cbegin(), players.cend(), [&name](const Player* player){ return player->getNickname() == name; }) != players.cend();

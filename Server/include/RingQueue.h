@@ -18,6 +18,8 @@ public:
     void pop();
     void deleteFront();
 
+    void zeroAllBets();
+
     bool playerExists(const AnsiString& name) const;
     bool allBetsAreEaqual() const;
     size_t activePlayersCount() const;

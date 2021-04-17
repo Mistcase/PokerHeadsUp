@@ -54,24 +54,24 @@ private:
 	class Stage
 	{
 	public:
-		Stage(TableInfo& table, StageContext stageContext) : table(&table), stageContext(stageContext)
+		Stage(TableInfo& table, StageContext& stageContext) : table(&table), stageContext(&stageContext)
 		{ table.interviewedPlayers = 0;}
 		virtual AnsiString makeLoopAction(const AnsiString& params = "") = 0;
 
 	protected:
 		TableInfo* table;
-		StageContext stageContext;
+		StageContext* stageContext;
 	};
 	class PreflopStage : public Stage
 	{
 	public:
-		PreflopStage(TableInfo& table, StageContext stageContext);
+		PreflopStage(TableInfo& table, StageContext& stageContext);
 		AnsiString makeLoopAction(const AnsiString& params = "") override;
 	};
 	class FlopStage : public Stage
 	{
 	public:
-		FlopStage(TableInfo& table, StageContext stageContext);
+		FlopStage(TableInfo& table, StageContext& stageContext);
 		AnsiString makeLoopAction(const AnsiString& params = "") override;
 	};
 	// class TurnStage : public Stage

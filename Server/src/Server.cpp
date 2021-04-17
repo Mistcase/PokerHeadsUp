@@ -62,18 +62,18 @@ void Server::handleEvent(const EventMessage& message)
 
 void Server::sendMessage(ConnectionDescriptor connection, const AnsiString& message)
 {
-    std::cout << "Message to connection(" << connection << "): " << message << std::endl;
+    //std::cout << "Message to connection(" << connection << "): " << message << std::endl;
     tcpServer->write(connection, Packet(message.c_str(), message.length() + 1));
 }
 
 void Server::sendMessageToAll(const AnsiString& message)
 {
-    std::cout << "Message to everyone: " << message << std::endl;
-    std::cout << "-----------------------------------------------\n";
+    //std::cout << "Message to everyone: " << message << std::endl;
+    //std::cout << "-----------------------------------------------\n";
     for (const auto conn : connections)
     {
         if (tcpServer->active(conn))
             sendMessage(conn, message);
     }
-    std::cout << "-----------------------------------------------\n\n";
+    //std::cout << "-----------------------------------------------\n\n";
 }
