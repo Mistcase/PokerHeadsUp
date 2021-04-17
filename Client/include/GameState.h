@@ -63,7 +63,7 @@ private:
 private:
 	//Updating
 	void updateNetwork();
-	void updateGui(const Vector2f& mousePos);
+	void updateGui(float deltaTime, const Vector2f& mousePos);
 	void updateGraphicsEntities();
 
 	void handleNetworkEvent(const EventMessageString& message);
@@ -82,6 +82,7 @@ private:
 	sf::RectangleShape background, myCards[2], oppCards[2];
 	sf::Text pot;
 	Button buttonPrototype, buttons[BTN_COUNT];
+	TextBox raiseTextBox;
 
 	PokerButton tableButton;
 

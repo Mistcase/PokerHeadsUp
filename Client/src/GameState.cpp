@@ -15,6 +15,7 @@ GameState::~GameState()
 
 void GameState::updateSfmlEvent(sf::Event &ev)
 {
+	raiseTextBox.updateEvent(ev);
 }
 
 void GameState::handleEvent(const EventMessage &message)
@@ -82,6 +83,9 @@ bool GameState::guiInit()
 	buttons[BTN_RAISE].setText(L"RAISE");
 	buttons[BTN_FOLD].setText(L"FOLD");
 
+	raiseTextBox = TextBox(Vector2f(680, 520), Vector2f(100, 20), Color(128, 128, 128), Color::Black, 1.f, "Raise value",
+	ApplicationFonts::ARIAL, Color::Black);
+
 	return true;
 }
 
@@ -126,11 +130,12 @@ void GameState::updateNetwork()
 	handleEvent(EventMessage(&netClient, message));
 }
 
-void GameState::updateGui(const Vector2f &mousePos)
+void GameState::updateGui(float deltaTime, const Vector2f &mousePos)
 {
 	//UpdateGui
 	for (auto &btn : buttons)
 		btn.update(mousePos);
+	raiseTextBox.update(mousePos, deltaTime);
 }
 
 void GameState::updateGraphicsEntities()
@@ -183,6 +188,14 @@ void GameState::handleNetworkEvent(const EventMessageString &message)
 
 			buttons[BTN_FOLD].setPosition(findPositionForButton());
 			buttons[BTN_FOLD].active = true;
+		}
+		else if (buttonsNotation == "CHECK_RAISE")
+		{
+			buttons[BTN_CHECK].setPosition(findPositionForButton());
+			buttons[BTN_CHECK].active = true;
+
+			buttons[BTN_RAISE].setPosition(findPositionForButton());
+			buttons[BTN_RAISE].active = true;
 		}
 		else
 		{
@@ -247,7 +260,7 @@ void GameState::handleNetworkEvent(const EventMessageString &message)
 	}
 	else if (action == "MakeDescision")
 	{
-		if (Notifications::GetNotificationNamedArg(message, "player") == localPlayer.getNickname())
+		if (Notifications::GetNotificationNamedArg(message, "Player") == localPlayer.getNickname())
 			showButtons(Notifications::GetNotificationNamedArg(message, "ButtonMode"));
 	}
 	else if (action == "ClientAnswer")
@@ -287,14 +300,19 @@ void GameState::handleGuiEvent(const EventMessage &message)
 {
 	//Handle buttonEvent
 	AnsiString buttonText = static_cast<Button *>(message.sender)->getText().toAnsiString();
-	AnsiString answer = Notifications::CreateNofiticationMessage("ClientDescision", buttonText);
-	netClient.sendMessage(answer);
+
+	AnsiString args = "Action:" + buttonText + "|";
+
+	if (buttonText == "RAISE")
+		args += "Value:" + raiseTextBox.getText() + "|";
+	
+	netClient.sendMessage(Notifications::CreateNofiticationMessage("ClientDescision", args));
 }
 
 void GameState::update(float deltaTime, const Vector2f &mousePos)
 {
 	updateGraphicsEntities();
-	updateGui(mousePos);
+	updateGui(deltaTime, mousePos);
 	updateNetwork();
 
 	localPlayer.update();
@@ -316,4 +334,5 @@ void GameState::draw(sf::RenderTarget &target, sf::RenderStates states) const
 	{
 		target.draw(btn, states);
 	}
+	target.draw(raiseTextBox);
 }

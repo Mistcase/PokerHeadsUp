@@ -20,7 +20,7 @@ bool NetClient::connect(const netboost::Address& serverAddr)
 
 bool NetClient::sendMessage(const AnsiString& message)
 {
-    return tcpClient->write(connectionDescriptor, netboost::Packet(message.c_str(), message.length()));
+    return tcpClient->write(connectionDescriptor, netboost::Packet(message.c_str(), message.length() + 1));
 }
 
 bool NetClient::hasMessage() const

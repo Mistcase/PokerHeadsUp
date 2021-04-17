@@ -43,48 +43,55 @@ private:
 		Player *button = nullptr;
 		Player *bb = nullptr;
 		Player *sb = nullptr;
-		Player *loopStartPlayer = nullptr;
 
 		Balance smallBlind = 10, currentMaxBet = 0, pot = 0;
-
-		bool handActive = false;
-		bool onceComplited = false;
+		size_t interviewedPlayers = 0;
 	};
+
+	class Stage;
+	typedef std::shared_ptr<Stage> StageContext;
 
 	class Stage
 	{
 	public:
-		virtual void makeLoopAction(TableInfo& table, StageContext& stageContext) = 0;
+		Stage(TableInfo& table, StageContext stageContext) : table(&table), stageContext(stageContext)
+		{ table.interviewedPlayers = 0;}
+		virtual AnsiString makeLoopAction(const AnsiString& params = "") = 0;
+
+	protected:
+		TableInfo* table;
+		StageContext stageContext;
 	};
 	class PreflopStage : public Stage
 	{
-		PreflopStage();
-		void makeLoopAction(TableInfo& table, StageContext& stageContext) override;
+	public:
+		PreflopStage(TableInfo& table, StageContext stageContext);
+		AnsiString makeLoopAction(const AnsiString& params = "") override;
 	};
 	class FlopStage : public Stage
 	{
-		FlopStage();
-		void makeLoopAction(TableInfo& table, StageContext& stageContext) override;
+	public:
+		FlopStage(TableInfo& table, StageContext stageContext);
+		AnsiString makeLoopAction(const AnsiString& params = "") override;
 	};
-	class TurnStage : public Stage
-	{
-		TurnStage();
-		void makeLoopAction(TableInfo& table, StageContext& stageContext) override;
-	};
-	class RiverStage : public Stage
-	{
-		RiverStage();
-		void makeLoopAction(TableInfo& table, StageContext& stageContext) override;
-	};
-	typedef std::shared_ptr<Stage> StageContext;
+	// class TurnStage : public Stage
+	// {
+	// 	TurnStage(TableInfo* table) : Stage(table){}
+	// 	void makeLoopAction() override;
+	// };
+	// class RiverStage : public Stage
+	// {
+	// 	RiverStage(TableInfo* table) : Stage(table){}
+	// 	void makeLoopAction() override;
+	// };
 
 public:
 	void setPlayersCount(size_t count);
 	void handleMessage(const AnsiString &message);
 
 private:
-	void startNewHand();
-	bool identifyNextHandAction();
+	//void startNewHand();
+	//bool identifyNextHandAction();
 
 private:
 	void handleNewConnectedPlayer(const AnsiString &message);
@@ -95,10 +102,11 @@ private:
 	void notifyObservers(const EventMessageString &message = "") override;
 
 private:
-	StageContext handStage;
+	StageContext stageContext;
 	TableInfo table;
 
 	size_t playersCount = 0;
+	bool handActive = false;
 	bool gameStarted = false;
 };
 

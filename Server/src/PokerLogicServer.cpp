@@ -18,7 +18,7 @@ void PokerLogicServer::handleMessage(const AnsiString &message)
     if (action == "ConnectedPlayerName")
         handleNewConnectedPlayer(message);
     else if (action == "ClientDescision")
-        handlePlayerDescision(Notifications::GetNotificationArgs(message));
+        handlePlayerDescision(message);
 }
 
 void PokerLogicServer::handleNewConnectedPlayer(const AnsiString &message)
@@ -30,7 +30,7 @@ void PokerLogicServer::handleNewConnectedPlayer(const AnsiString &message)
     AnsiString connetionStatus = "Fail";
 
     //If connection is valid
-    auto players = table.players;
+    PlayersRingQueue &players = table.players;
     if (!players.playerExists(nickname))
     {
         players.push(new Player(nickname, START_PLAYER_BALANCE, 1)); //Not 1
@@ -46,64 +46,70 @@ void PokerLogicServer::handleNewConnectedPlayer(const AnsiString &message)
         gameStarted = true;
 
     notifyObservers(Notifications::CreateNofiticationMessage("PlayersInfo",
-        "Status:" + connetionStatus + "|" + "PlayersCount:" + std::to_string(players.size()) + "|" + allPlayers));
+                                                             "Status:" + connetionStatus + "|" + "PlayersCount:" + std::to_string(players.size()) + "|" + allPlayers));
 
     if (gameStarted)
     {
+        stageContext = StageContext(new PreflopStage(table, stageContext));
         notifyObservers(Notifications::CreateNofiticationMessage("StartGame", "-"));
-        startNewHand();
-        identifyNextHandAction();
+        notifyObservers(Notifications::CreateNofiticationMessage("StartHand", vector<AnsiString>(
+                                                                                  {
+                                                                                      "button:" + table.button->getNickname(),
+                                                                                      "sbp:" + table.sb->getNickname(),
+                                                                                      "bbp:" + table.bb->getNickname(),
+                                                                                      "sbv:" + to_string(table.smallBlind),
+                                                                                  })));
+        notifyObservers(stageContext->makeLoopAction());
     }
 }
 
-void PokerLogicServer::handlePlayerDescision(const AnsiString &playerAction)
+void PokerLogicServer::handlePlayerDescision(const AnsiString &message)
 {
+    //Handle player descision
+    Player* currentPlayer = table.players.front();
 
-    // //Handle player descision
-    // Player* currentPlayer = players.front();
+    //Check if player action is possible
+    //if (!currentPlayer->hasAction(playerAction))
+        //return; //Ban
+    AnsiString playerAction = Notifications::GetNotificationNamedArg(message, "Action");
+    if (playerAction == "CHECK")
+    {
 
-    // //Check if player action is possible
-    // if (!currentPlayer->hasAction(playerAction))
-    //     return; //Ban
+    }
+    else if (playerAction == "CALL")
+    {
+    	currentPlayer->makeBet(table.currentMaxBet - currentPlayer->getCurrentBet());
+    }
+    else if (playerAction == "BET")
+    {
+    	Balance betValue = atoi(playerAction.c_str());
+    	currentPlayer->makeBet(betValue);
+    	table.currentMaxBet = betValue;
+    }
+    else if (playerAction == "RAISE")
+    {
+    	//Args contins new max bet value
+    	table.currentMaxBet = atoi(Notifications::GetNotificationNamedArg(message, "Value").c_str());
+    	currentPlayer->makeBet(table.currentMaxBet - currentPlayer->getCurrentBet());
+    }
+    else if (playerAction == "FOLD")
+    {
+    	currentPlayer->setActive(false);
+    }
+    else
+    {
+    	//Error
+    }
 
-    // if (playerAction == "CHECK")
-	// {
-        
-	// }
-	// else if (playerAction == "CALL")
-	// {
-	// 	currentPlayer->makeBet(currentMaxBet - currentPlayer->getCurrentBet());
-	// }
-	// else if (playerAction == "BET")
-	// {
-	// 	Balance betValue = atoi(playerAction.c_str());
-	// 	currentPlayer->makeBet(betValue);
-	// 	currentMaxBet = betValue;
-	// }
-	// else if (playerAction == "RAISE")
-	// {
-	// 	//Args contins new max bet value
-	// 	currentMaxBet = atoi(playerAction.c_str());
-	// 	currentPlayer->makeBet(currentMaxBet - currentPlayer->getCurrentBet());
-	// }
-	// else if (playerAction == "FOLD")
-	// {
-	// 	currentPlayer->setActive(false);
-	// }
-	// else
-	// {
-	// 	//Error
-	// }
-
-    // notifyObservers(Notifications::CreateNofiticationMessage("HideGui", "-"));
-    // notifyObservers(Notifications::CreateNofiticationMessage("PlayerStackInfo", 
-    // {
-    //     "Player:" + currentPlayer->getNickname(),
-    //     "Balance:" + to_string(currentPlayer->getBalance()), 
-    //     "Bet:" + to_string(currentPlayer->getCurrentBet()),
-    // }));
-    // players.pop();
-    // identifyNextHandAction();
+    notifyObservers(Notifications::CreateNofiticationMessage("HideGui", "-"));
+    notifyObservers(Notifications::CreateNofiticationMessage("PlayerStackInfo",
+    {
+        "Player:" + currentPlayer->getNickname(),
+        "Balance:" + to_string(currentPlayer->getBalance()),
+        "Bet:" + to_string(currentPlayer->getCurrentBet()),
+    }));
+    table.players.pop();
+    notifyObservers(stageContext->makeLoopAction());
 }
 
 // AnsiString PokerLogicServer::createPlayersInfo()
@@ -121,50 +127,92 @@ void PokerLogicServer::notifyObservers(const EventMessageString &message)
         obs->handleEvent(EventMessage(this, message));
 }
 
-void PokerLogicServer::startNewHand()
+PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext stageContext) : Stage(table, stageContext)
 {
-    // for (const auto player : players.getPlayersData())
-    // {
-    //     player->setActive(true);
-    //     player->removeAllActions();
-    // }
+    PlayersRingQueue &players = table.players;
+    for (const auto player : players.getPlayersData())
+    {
+        player->setActive(true);
+        player->removeAllActions();
+    }
 
-    // handActive = true;
-    // handStage = STAGE_PREFLOP;
+    //handActive = true;
 
-    // //Set button player
-    // button = players.front();
-    // players.pop(); //Goto player after button
+    //Set button player
+    table.button = players.front();
+    players.pop(); //Goto player after button
 
-    // sb = players.front();
-    // sb->makeBet(smallBlind);
-    // //players.pop();
+    Balance smallBlind = table.smallBlind;
+    table.sb = players.front();
+    table.sb->makeBet(smallBlind);
+    //players.pop();
 
-    // //Now it is big blind
-    // bb = players.next();
-    // bb->makeBet(2 * smallBlind);
+    //Now it is big blind
+    table.bb = players.next();
+    table.bb->makeBet(2 * smallBlind);
 
-    // for (int i = 0; i < 2; i++)
-    //     players.pop();
-    // loopStartPlayer = players.front();
-    // currentMaxBet = 2 * smallBlind;
+    for (int i = 0; i < 2; i++)
+        players.pop();
+    table.currentMaxBet = 2 * smallBlind;
 
-    // //Now players.front() is player after button(small blind)
-    // notifyObservers(Notifications::CreateNofiticationMessage("StartHand", vector<AnsiString>(
-    // {
-    //     "button:" + button->getNickname(),
-    //     "sbp:" + sb->getNickname(),
-    //     "bbp:" + bb->getNickname(),
-    //     "sbv:" + to_string(smallBlind),
-    // }
-    // )));
-
+    //Now players.front() is player after button(small blind)
     // if (players.size() == 2)
     //     onceComplited = true;
 }
 
-bool PokerLogicServer::identifyNextHandAction()
+AnsiString PokerLogicServer::PreflopStage::makeLoopAction(const AnsiString &params)
 {
-    
-    return true;
+    PlayersRingQueue *players = &table->players;
+    Player *currentPlayer = players->front();
+
+    AnsiString retVal;
+    if (!players->allBetsAreEaqual() || table->interviewedPlayers < players->size())
+    {
+        if (players->activePlayersCount() <= 1)
+            return "GameOver";
+
+        if (currentPlayer == table->bb)
+        {
+            // if (players->allBetsAreEaqual())
+            // {
+
+            // }
+            // currentPlayer->addAction("CHECK");
+            // currentPlayer->addAction("RAISE");
+            // currentPlayer->addAction("FOLD");
+
+            retVal = Notifications::CreateNofiticationMessage("MakeDescision",
+            {
+                "Player:" + currentPlayer->getNickname(),
+                AnsiString("ButtonMode:") + (players->allBetsAreEaqual() ? "CHECK_RAISE" : "CALL_RAISE_FOLD"),
+            });
+        }
+        else 
+        {
+            retVal = Notifications::CreateNofiticationMessage("MakeDescision",
+            {
+                "Player:" + currentPlayer->getNickname(),
+                "ButtonMode:CALL_RAISE_FOLD",
+            });
+        }
+    }
+    else
+    {
+        stageContext = StageContext(new FlopStage(*table, stageContext));
+    }
+    table->interviewedPlayers++;
+    return retVal;
+}
+
+PokerLogicServer::FlopStage::FlopStage(TableInfo &table, StageContext stageContext) : Stage(table, stageContext)
+{
+    std::cout << "Flop stage now!\n";
+    table.currentMaxBet = 0;
+    table.interviewedPlayers = 0;
+}
+
+AnsiString PokerLogicServer::FlopStage::makeLoopAction(const AnsiString &params)
+{
+    std::cout << "Flop stage: make descision!\n";
+    return "";
 }
