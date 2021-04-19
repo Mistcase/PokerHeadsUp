@@ -2,7 +2,7 @@
 #ifndef _SETTINGS_DEFINED_
 #define _SETTINGS_DEFINED_
 
-#include "Types.h"
+#include <Types.h>
 
 inline sf::Vector2f MultiplyVector(sf::Vector2f vector, float multiplier)
 {

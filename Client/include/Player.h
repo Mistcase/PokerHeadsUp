@@ -4,7 +4,7 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "Types.h"
+#include <Types.h>
 #include "Settings.h"
 #include "Fonts.h"
 #include "TableSlots.h"

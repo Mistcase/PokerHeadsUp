@@ -9,7 +9,7 @@ Server::Server(const string &fullAddr, size_t playersCount)
         endPointAddr = fullAddr;
         tcpServer = new TcpServer(Address(fullAddr));
 
-        for (int i = 0; i < playersCount; i++)
+        for (size_t i = 0; i < playersCount; i++)
             connections.emplace_back(tcpServer->openConnection());
     }
     catch (const ConnectionOpeningException &e)

@@ -2,12 +2,11 @@
 #ifndef _TEXTBOX_FILE_INCLUDED_
 #define _TEXTBOX_FILE_INCLUDED_
 
+#include "Types.h"
 #include "Fonts.h"
 
 namespace sfml_gui
 {
-
-using namespace sf;
 class TextBox : public sf::Drawable
 {
 public:

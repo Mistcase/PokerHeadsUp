@@ -3,8 +3,8 @@
 
 #include <stack>
 
-#include "Types.h"
-#include "Fonts.h"
+#include <Types.h>
+#include <Fonts.h>
 
 class State;
 typedef std::stack<State*> StatesStack;

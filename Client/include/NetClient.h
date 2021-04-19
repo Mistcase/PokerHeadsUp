@@ -1,9 +1,9 @@
 #ifndef _NET_CLIENT_INCLUDED_
 #define _NET_CLIENT_INCLUDED_
 
-#include "Types.h"
-
+#include <Types.h>
 #include <TcpClient.hpp>
+
 
 class NetClient
 {

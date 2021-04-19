@@ -5,8 +5,8 @@
 #include "GameState.h"
 #include "Observer.h"
 
-#include "Button.h"
-#include "TextBox.h"
+#include <Button.h>
+#include <TextBox.h>
 
 class MainMenuState : public State, public Observer
 {

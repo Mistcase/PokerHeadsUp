@@ -18,9 +18,17 @@ set(SOURCES
         ${SOURCES_DIRECTORY}/Observer.cpp)
 
 add_library(Netboost STATIC IMPORTED)
+
+if (APPLE)
 set_property(TARGET Netboost PROPERTY
              IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../Netboost/build/libNetboost.a)
+endif(APPLE)
+###########################################################################################
+if (WIN32)
+	set_property(TARGET Netboost PROPERTY
+             IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../Netboost/build/Release/Netboost.lib)
+endif(WIN32)
 
 add_executable(PokerServer ${HEADERS} ${SOURCES})
 target_include_directories(PokerServer PRIVATE ${INCLUDE_DIRECTORY} ${NETBOOST_INCLUDE_DIRECTORY})
-target_link_libraries (PokerServer Netboost)
+target_link_libraries(PokerServer Netboost)
