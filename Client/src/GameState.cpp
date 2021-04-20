@@ -83,7 +83,7 @@ bool GameState::guiInit()
 	buttons[BTN_RAISE].setText(L"RAISE");
 	buttons[BTN_FOLD].setText(L"FOLD");
 
-	raiseTextBox = TextBox(Vector2f(680, 520), Vector2f(100, 20), Color(128, 128, 128), Color::Black, 1.f, "Raise value",
+	raiseTextBox = TextBox(Vector2f(680, 520), Vector2f(100, 20), Color(128, 128, 128), Color::Black, 1.f, "Bet/Raise value",
 	ApplicationFonts::ARIAL, Color::Black);
 
 	return true;
@@ -279,6 +279,17 @@ void GameState::handleNetworkEvent(const EventMessageString &message)
 		Player* player = getPlayer(Notifications::GetNotificationNamedArg(message, "Player"));
 		player->setBalance(playerBalance);
 		player->setBet(betValue);
+	}
+	else if (action == "Cards")
+	{
+		Deck::CardsValuesGraphicsId val[2];
+		Deck::CardsSuitsGraphicsId suit[2];
+		for (int i = 0; i < 2; i++)
+		{
+			val[i] = static_cast<Deck::CardsValuesGraphicsId>(atoi(Notifications::GetNotificationNamedArg(message, "CardValue" + to_string(i)).c_str()) - 1);
+			suit[i] = static_cast<Deck::CardsSuitsGraphicsId>(atoi(Notifications::GetNotificationNamedArg(message, "CardSuit" + to_string(i)).c_str()) - 1);
+		}
+		localPlayer.setCards(Card(val[0], suit[0]), Card(val[1], suit[1]));
 	}
 	else
 	{

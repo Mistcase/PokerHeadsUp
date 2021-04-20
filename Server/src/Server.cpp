@@ -47,17 +47,14 @@ void Server::start()
 void Server::handleEvent(const EventMessage& message)
 {
     AnsiString action = Notifications::GetNotificationAction(message.params);
-    if (action == "AddNewPlayer")
-    {
-        if (Notifications::GetNotificationNamedArg(message.params, "Status") == "Fail")
-        {
-            //Handle failed connection
-            std::cout << "Connection Failed!\n";
-            return;
-        }
-    }
-    sendMessageToAll(message.params);
-    
+	if (action == "Cards")
+	{
+		sendMessage(atoi(Notifications::GetNotificationNamedArg(message.params, "PlayerId").c_str()), message.params);
+	}
+	else
+	{
+		sendMessageToAll(message.params);
+	}
 }
 
 void Server::sendMessage(ConnectionDescriptor connection, const AnsiString& message)

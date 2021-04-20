@@ -6,6 +6,7 @@
 #include "RingQueue.h"
 #include "Observer.h"
 #include "Player.h"
+#include "Deck.h"
 
 #include <vector>
 #include <thread>
@@ -46,17 +47,28 @@ private:
 
 		Balance smallBlind = 10, currentMaxBet = 0, pot = 0;
 		size_t interviewedPlayers = 0;
+		
+		Deck deck;
 	};
 
 	class Stage;
-	typedef std::shared_ptr<Stage> StageContext;
+	typedef std::shared_ptr<Stage> stage_ptr;
+
+	class StageContext
+	{
+	public:
+		AnsiString update(TableInfo& table);
+		void setStage(Stage* newStage);
+	private:
+		stage_ptr stage;
+	};
 
 	class Stage
 	{
 	public:
-		Stage(TableInfo& table, StageContext& stageContext) : table(&table), stageContext(&stageContext)
-		{ table.interviewedPlayers = 0;}
-		virtual AnsiString makeLoopAction(const AnsiString& params = "") = 0;
+		Stage(TableInfo& table, StageContext& stageContext) : table(&table), stageContext(&stageContext) { table.interviewedPlayers = 0;}
+
+		virtual AnsiString identifyPlayerAction(const AnsiString& params = "") = 0;
 
 	protected:
 		TableInfo* table;
@@ -66,32 +78,18 @@ private:
 	{
 	public:
 		PreflopStage(TableInfo& table, StageContext& stageContext);
-		AnsiString makeLoopAction(const AnsiString& params = "") override;
+		AnsiString identifyPlayerAction(const AnsiString& params = "") override;
 	};
-	class FlopStage : public Stage
+	class NonPreflopStage : public Stage
 	{
 	public:
-		FlopStage(TableInfo& table, StageContext& stageContext);
-		AnsiString makeLoopAction(const AnsiString& params = "") override;
+		NonPreflopStage(TableInfo& table, StageContext& stageContext);
+		AnsiString identifyPlayerAction(const AnsiString& params = "") override;
 	};
-	// class TurnStage : public Stage
-	// {
-	// 	TurnStage(TableInfo* table) : Stage(table){}
-	// 	void makeLoopAction() override;
-	// };
-	// class RiverStage : public Stage
-	// {
-	// 	RiverStage(TableInfo* table) : Stage(table){}
-	// 	void makeLoopAction() override;
-	// };
 
 public:
 	void setPlayersCount(size_t count);
 	void handleMessage(const AnsiString &message);
-
-private:
-	//void startNewHand();
-	//bool identifyNextHandAction();
 
 private:
 	void handleNewConnectedPlayer(const AnsiString &message);

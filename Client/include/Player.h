@@ -4,11 +4,12 @@
 
 #include <SFML/Graphics.hpp>
 
-#include <Types.h>
+#include "Types.h"
 #include "Settings.h"
 #include "Fonts.h"
 #include "TableSlots.h"
 #include "Resources.h"
+#include "Deck.h"
 
 class Player : public sf::Drawable
 {
@@ -34,6 +35,7 @@ public:
 	void setBalance(Balance balance);
 	void setBet(Bet betValue);
 	Bet makeBet(Bet betValue);
+	void setCards(const Card& c1, const Card& c2);
 
 	const String& getNickname() const;
 	Balance getBalance() const;
@@ -54,7 +56,7 @@ private:
 	//Graphics data
 	Text playerString;
 	Texture tChips;
-	RectangleShape chipsSprite;
+	RectangleShape chipsSprite, cards[2];
 
 	//Current Bet
 	Text g_betValue;

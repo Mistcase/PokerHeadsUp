@@ -2,6 +2,7 @@
 #define _PLAYER_INCLUDED_
 
 #include "Types.h"
+#include "Cards.h"
 
 typedef int Balance;
 
@@ -24,6 +25,8 @@ public:
 
 public:
     Player(const AnsiString& nickname, Balance startBalance, int id);
+	
+	void setCards(const Card& c1, const Card& c2);
 
 	void setBalance(Balance balance);
 	Balance makeBet(Balance betValue);
@@ -38,6 +41,8 @@ public:
 	Balance getCurrentBet() const;
 	bool isActive() const;
 	bool hasAction(const AnsiString& action) const;
+	pair<Card, Card> getCards() const;
+	int getId() const;
 
 private:
 	//Player data
@@ -46,6 +51,8 @@ private:
 	PlayerDescisionMask actionsMask = PlayerDescisionId::DESC_NONE;
 	int id;
 	bool active = true;
+
+	Card cards[2];
 };
 
 #endif

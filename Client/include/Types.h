@@ -19,6 +19,7 @@ using std::map;
 using std::array;
 using std::pair;
 using std::shared_ptr;
+using std::to_string;
 
 using sf::String;
 using sf::Vector2f;

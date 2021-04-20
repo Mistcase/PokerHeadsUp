@@ -6,8 +6,29 @@ using namespace std;
 
 int main()
 {
+	netboost::Initialize();
+
 	Application app;
 	app.run();
+
+	/*Deck deck;
+	Deck::Card& card = const_cast<Deck::Card&>(deck.getCard(Deck::CardsValuesGraphicsId::GI_TEN, Deck::CardsSuitsGraphicsId::GI_DIAMONDS));
+	card.setPosition(100, 100);
+
+	RenderWindow window(VideoMode(800, 600), "Window");
+	while (window.isOpen())
+	{
+		Event ev;
+		while (window.pollEvent(ev))
+		{
+			if (ev.type == Event::Closed)
+				window.close();
+		}
+
+		window.clear();
+		window.draw(card);
+		window.display();
+	}*/
 
 	//cout << Resources::path("Arial.ttf") << endl;
 
@@ -62,55 +83,6 @@ int main()
 		cout << "HIGH_CARD\n";
 		break;
 	}*/
-
-	//netboost::Initialize();
-
-	//std::AnsiString mode;
-	//std::cin >> mode;
-
-	//if (mode == "server")
-	//{
-	//	TcpServer server;
-	//	server = TcpServer(Address("127.0.0.1:12345"));
-	//	auto conn = server.openConnection();
-
-	//	server.accept(conn);
-
-	//	while (true)
-	//	{
-	//		std::cout << "Message: ";
-	//		std::AnsiString str;
-	//		cin >> str;
-
-	//		server.write(conn, Packet(str.c_str(), str.size()));
-
-	//		/*uint32_t size = str.size();
-	//		server.write(conn, size, sizeof(uint32_t));
-	//		server.write(conn, *str.c_str(), str.size());*/
-	//	}
-
-	//}
-
-	//else if (mode == "client")
-	//{
-	//	TcpClient client;
-	//	auto conn = client.connect(Address("127.0.0.1:12345"));
-	//	while (true)
-	//	{
-	//		char buffer[256];
-	//		ZeroMemory(buffer, 256);
-
-	//		uint32_t size;
-
-	//		Packet packet = client.readPacket(conn);
-	//		/*client.read(conn, &size, sizeof(uint32_t));
-	//		client.read(conn, buffer, size);*/
-
-	//		for (int i = 0; i < packet.getSize(); i++)
-	//			std::cout << (*((char*)packet.getData() + i));
-	//		std::cout << std::endl;
-	//	}
-	//}
 
 	return 0;
 }

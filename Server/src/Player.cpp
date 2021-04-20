@@ -4,6 +4,17 @@ Player::Player(const AnsiString &nickname, Balance startBalance, int id) : name(
 {
 }
 
+void Player::setCards(const Card & c1, const Card & c2)
+{
+	cards[0] = c1;
+	cards[1] = c2;
+}
+
+void Player::setBalance(Balance balance)
+{
+	this->balance = balance;
+}
+
 Balance Player::makeBet(Balance betValue)
 {
     if (balance >= betValue)
@@ -69,6 +80,16 @@ bool Player::isActive() const
 bool Player::hasAction(const AnsiString& action) const
 {
     return actionsMask & PLAYERS_DESC_MAP.at(action);
+}
+
+pair<Card, Card> Player::getCards() const
+{
+	return pair<Card, Card>(cards[0], cards[1]);
+}
+
+int Player::getId() const
+{
+	return id;
 }
 
 const map<AnsiString, Player::PlayerDescisionId> Player::PLAYERS_DESC_MAP =

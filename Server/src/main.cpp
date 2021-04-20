@@ -1,7 +1,5 @@
 #include "Server.h"
 
-#include <map>
-
 int main()
 {
 	netboost::Initialize();

@@ -26,7 +26,7 @@ endif(APPLE)
 ###########################################################################################
 if (WIN32)
 	set_property(TARGET Netboost PROPERTY
-             IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../Netboost/build/Release/Netboost.lib)
+             IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../Netboost/build/Debug/Netboost.lib)
 endif(WIN32)
 
 add_executable(PokerServer ${HEADERS} ${SOURCES})

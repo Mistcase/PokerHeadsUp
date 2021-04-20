@@ -2,8 +2,8 @@
 
 Card::Card(CardValue value, CardSuit suit)
 {
-	value = value;
-	suit = suit;
+	this->value = value;
+	this->suit = suit;
 }
 
 CardValue Card::getValue()

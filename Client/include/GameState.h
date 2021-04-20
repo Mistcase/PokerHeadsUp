@@ -6,7 +6,7 @@
 #include <thread>
 #include <functional>
 
-
+#include "Types.h"
 #include "Settings.h"
 #include "State.h"
 #include "Player.h"
@@ -16,6 +16,7 @@
 #include "Resources.h"
 #include "NetClient.h"
 #include "Notifications.h"
+#include "Deck.h"
 
 namespace network_mode
 {
@@ -58,6 +59,7 @@ protected:
 
 private:
 	//Functional
+
 	Player* getPlayer(const AnsiString& nickname) const;
 
 private:
@@ -93,6 +95,7 @@ private:
 private:
 	//Data
 	Player localPlayer, opponentPlayer;
+	Deck deck;
 };
 
 #endif

@@ -41,18 +41,28 @@ void Player::setPlayerSlot(table_slots::Value slot)
 {
 	playerSlot = slot;
 
+	for (int i = 0; i < 2; i++)
+	{
+		cards[i].setSize(GAMESTATE_CARD_SIZE);
+		Deck::setCard(&cards[i], Deck::CardsValuesGraphicsId::GI_BACK_CARD, Deck::CardsSuitsGraphicsId::GI_SUIT_UNKNOWN);
+	}
+
 	switch (slot)
 	{
 	case table_slots::Value::TOP:
 		playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - playerString.getGlobalBounds().width / 2, 135);
 		chipsSprite.setPosition(playerString.getGlobalBounds().left + playerString.getGlobalBounds().width + 5, 135);
 		g_betValue.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - g_betValue.getGlobalBounds().width / 2, 158);
+		cards[0].setPosition(APPLICATION_WINDOW_SIZE.x / 2 - GAMESTATE_CARD_SIZE.x, 130 - GAMESTATE_CARD_SIZE.y);
+		cards[1].setPosition(APPLICATION_WINDOW_SIZE.x / 2 + 2, 130 - GAMESTATE_CARD_SIZE.y);
 		break;
 
 	case table_slots::Value::BOTTOM:
 		playerString.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - playerString.getGlobalBounds().width / 2, 450);
 		chipsSprite.setPosition(playerString.getGlobalBounds().left + playerString.getGlobalBounds().width + 5, 450);
 		g_betValue.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - g_betValue.getGlobalBounds().width / 2, 428);
+		cards[0].setPosition(APPLICATION_WINDOW_SIZE.x / 2 - GAMESTATE_CARD_SIZE.x, 475);
+		cards[1].setPosition(APPLICATION_WINDOW_SIZE.x / 2 + 2, 475);
 		break;
 
 	default:
@@ -88,6 +98,12 @@ Bet Player::makeBet(Bet betValue)
     }
 }
 
+void Player::setCards(const Card & c1, const Card & c2)
+{
+	Deck::setCard(&cards[0], c1.first, c1.second);
+	Deck::setCard(&cards[1], c2.first, c2.second);
+}
+
 const String& Player::getNickname() const
 {
 	return name;
@@ -111,9 +127,12 @@ void Player::update()
 
 void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
-	target.draw(playerString);
-	target.draw(chipsSprite);
+	target.draw(playerString, states);
+	target.draw(chipsSprite, states);
+
+	for (int i = 0; i < 2; i++)
+		target.draw(cards[i], states);
 
 	if (currentBet != 0)
-		target.draw(g_betValue);
+		target.draw(g_betValue, states);
 }
