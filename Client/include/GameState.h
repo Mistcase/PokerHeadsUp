@@ -2,34 +2,35 @@
 #ifndef _GAME_STATE_DEFINED_
 #define _GAME_STATE_DEFINED_
 
-#include <iostream>
-#include <thread>
-#include <functional>
-
 #include "Types.h"
 #include "Settings.h"
 #include "State.h"
 #include "Player.h"
 #include "PokerButton.h"
-#include "Button.h"
 #include "MessageBox.h"
 #include "Resources.h"
 #include "NetClient.h"
 #include "Notifications.h"
 #include "Deck.h"
 
-namespace network_mode
-{
-	enum class Value
-	{
-		UNKNOWN,
-		OPEN_SERVER,
-		JUST_CONNECT
-	};
-}
+#include <Button.h>
+#include <TextBox.h>
+
+#include <iostream>
+#include <thread>
+#include <functional>
 
 class GameState : public State, public Observerable, public Observer
 {
+private:
+	//Command
+	class Command
+	{
+	public:
+		Command(const AnsiString& cmd);
+		virtual void execute() = 0;
+	};
+
 public:
 	enum ButtonId
 	{
@@ -42,7 +43,7 @@ public:
 	};
 
 public:
-	GameState(StatesStack* statesStack, const String& nickName, network_mode::Value mode);
+	GameState(StatesStack* statesStack, const String& nickName);
 	~GameState() override;
 
 	void update(float deltaTime, const Vector2f& mousePos) override;
@@ -74,7 +75,7 @@ private:
 private:
 	//Initialization
 	bool playersInit(const String& localPlayerName);
-	bool netInit(network_mode::Value networkMode);
+	bool netInit();
 	bool guiInit();
 	bool sfmlGraphicsInit();
 

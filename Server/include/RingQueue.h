@@ -28,7 +28,7 @@ public:
     const vector<Player*>& getPlayersData() const;
 
 private:
-    vector<Player*> players;
+	vector<Player*> players;
 };
 
 #endif

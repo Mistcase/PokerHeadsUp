@@ -5,11 +5,13 @@
 #include <string>
 #include <map>
 #include <utility>
+#include <memory>
 
 typedef std::string AnsiString;
 
 using std::to_string;
 using std::map;
 using std::pair;
+using std::shared_ptr;
 
 #endif

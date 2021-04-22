@@ -30,7 +30,7 @@ protected:
 
 private:
 	Button buttonProrotype;
-	Button btnConnect, btnCreateGame;
+	Button btnConnect;
 	TextBox loginBox;
 };
 

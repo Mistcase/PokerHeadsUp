@@ -1,11 +1,10 @@
 #include "PokerLogicServer.h"
-
 #include <iostream>
 
 void PokerLogicServer::setPlayersCount(size_t count)
 {
 	//if count <= 1 || count >= 6 throw exception
-	playersCount = count;
+	table.expectedPlayersCount = count;
 }
 
 void PokerLogicServer::handleMessage(const AnsiString &message)
@@ -13,122 +12,19 @@ void PokerLogicServer::handleMessage(const AnsiString &message)
 	if (message.empty())
 		return;
 
-	AnsiString action = Notifications::GetNotificationAction(message);
+	ExecutableCommand::Create(message, this)->execute();
 
-	if (action == "ConnectedPlayerName")
-		handleNewConnectedPlayer(message);
-	else if (action == "ClientDescision")
-		handlePlayerDescision(message);
-
-	//Update players cards info
-	if (!gameStarted)
-		return;
-
-	for (auto& player : table.players.getPlayersData())
-	{
-		auto cards = player->getCards();
-		notifyObservers(Notifications::CreateNofiticationMessage("Cards",
-		{
-			"PlayerId:" + to_string(player->getId()),
-			"CardValue" + to_string(0) + ":" + to_string(cards.first.getValue()),
-			"CardSuit" + to_string(0) + ":" + to_string(cards.first.getSuit()),
-			"CardValue" + to_string(1) + ":" + to_string(cards.second.getValue()),
-			"CardSuit" + to_string(1) + ":" + to_string(cards.second.getSuit()),
-		}));
-	}
-}
-
-void PokerLogicServer::handleNewConnectedPlayer(const AnsiString &message)
-{
-	constexpr Balance START_PLAYER_BALANCE = 1000;
-
-	//Handle new connection
-	AnsiString nickname = Notifications::GetNotificationArgs(message);
-	AnsiString connetionStatus = "Fail";
-
-	//If connection is valid
-	PlayersRingQueue &players = table.players;
-	if (!players.playerExists(nickname))
-	{
-		static int id = 1;
-		players.push(new Player(nickname, START_PLAYER_BALANCE, id++));
-		connetionStatus = "Success";
-	}
-
-	AnsiString allPlayers("");
-	int counter = 0;
-	for (const auto player : table.players.getPlayersData())
-		allPlayers += "player" + std::to_string(counter++) + ":" + player->getNickname() + "|";
-
-	if (table.players.size() == playersCount)
-		gameStarted = true;
-
-	notifyObservers(Notifications::CreateNofiticationMessage("PlayersInfo",
-		"Status:" + connetionStatus + "|" + "PlayersCount:" + to_string(players.size()) + "|" + allPlayers));
-
+	////Update players cards info
 	if (gameStarted)
 	{
-		stageContext.setStage(new PreflopStage(table, stageContext));
-		notifyObservers(Notifications::CreateNofiticationMessage("StartGame", "-"));
-		notifyObservers(Notifications::CreateNofiticationMessage("StartHand", vector<AnsiString>(
-		{
-			"button:" + table.button->getNickname(),
-			"sbp:" + table.sb->getNickname(),
-			"bbp:" + table.bb->getNickname(),
-			"sbv:" + to_string(table.smallBlind),
-		})));
-		notifyObservers(stageContext.update(table));
+		for (const auto player : table.players.getPlayersData())
+			sendCommand(ptr_command(new CmdSetCards(player)));
 	}
 }
 
-void PokerLogicServer::handlePlayerDescision(const AnsiString &message)
+void PokerLogicServer::sendCommand(ptr_command command)
 {
-	//Handle player descision
-	Player* currentPlayer = table.players.front();
-
-	//Check if player action is possible
-	//if (!currentPlayer->hasAction(playerAction))
-		//return; //Ban
-	AnsiString playerAction = Notifications::GetNotificationNamedArg(message, "Action");
-	if (playerAction == "CHECK")
-	{
-
-	}
-	else if (playerAction == "CALL")
-	{
-		currentPlayer->makeBet(table.currentMaxBet - currentPlayer->getCurrentBet());
-	}
-	else if (playerAction == "BET")
-	{
-		Balance betValue = atoi(playerAction.c_str());
-		currentPlayer->makeBet(betValue);
-		table.currentMaxBet = betValue;
-	}
-	else if (playerAction == "RAISE")
-	{
-		//Args contins new max bet value
-		table.currentMaxBet = atoi(Notifications::GetNotificationNamedArg(message, "Value").c_str());
-		currentPlayer->makeBet(table.currentMaxBet - currentPlayer->getCurrentBet());
-	}
-	else if (playerAction == "FOLD")
-	{
-		currentPlayer->setActive(false);
-	}
-	else
-	{
-		//Error
-	}
-
-	notifyObservers(Notifications::CreateNofiticationMessage("HideGui", "-"));
-	notifyObservers(Notifications::CreateNofiticationMessage("PlayerStackInfo",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			"Balance:" + to_string(currentPlayer->getBalance()),
-			"Bet:" + to_string(currentPlayer->getCurrentBet()),
-		}));
-	table.players.pop();
-
-	notifyObservers(stageContext.update(table));
+	notifyObservers(command->str());
 }
 
 void PokerLogicServer::notifyObservers(const EventMessageString &message)
@@ -141,7 +37,7 @@ void PokerLogicServer::notifyObservers(const EventMessageString &message)
 
 
 
-
+//Stages
 AnsiString PokerLogicServer::StageContext::update(TableInfo& table)
 {
 	PlayersRingQueue *players = &table.players;
@@ -179,7 +75,7 @@ void PokerLogicServer::StageContext::setStage(Stage * newStage)
 PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext& stageContext) : Stage(table, stageContext)
 {
 	std::cout << "PREFLOP STAGE!\n";
-	
+
 	Deck& deck = table.deck;
 	deck = Deck();
 	deck.shuffle();
@@ -231,10 +127,10 @@ AnsiString PokerLogicServer::PreflopStage::identifyPlayerAction(const AnsiString
 	else
 	{
 		return Notifications::CreateNofiticationMessage("MakeDescision",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			"ButtonMode:CALL_RAISE_FOLD",
-		});
+			{
+				"Player:" + currentPlayer->getNickname(),
+				"ButtonMode:CALL_RAISE_FOLD",
+			});
 	}
 }
 
@@ -259,17 +155,186 @@ AnsiString PokerLogicServer::NonPreflopStage::identifyPlayerAction(const AnsiStr
 	if (currentPlayer->getCurrentBet() < table->currentMaxBet)
 	{
 		return Notifications::CreateNofiticationMessage("MakeDescision",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			"ButtonMode:CALL_RAISE_FOLD",
-		});
+			{
+				"Player:" + currentPlayer->getNickname(),
+				"ButtonMode:CALL_RAISE_FOLD",
+			});
 	}
 	else
 	{
 		return Notifications::CreateNofiticationMessage("MakeDescision",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			"ButtonMode:CHECK_BET",
-		});
+			{
+				"Player:" + currentPlayer->getNickname(),
+				"ButtonMode:CHECK_BET",
+			});
 	}
+}
+
+
+
+//Commands
+PokerLogicServer::ptr_executable_command PokerLogicServer::ExecutableCommand::Create(const AnsiString & cmd, PokerLogicServer* logicServer)
+{
+	AnsiString action = Notifications::GetNotificationAction(cmd);
+
+	if (action == "NewConnection")
+		return ptr_executable_command(new CmdNewConnection(logicServer, cmd));
+	if (action == "ClientDecision")
+		return ptr_executable_command(new CmdClientDecisionRequest(logicServer, cmd));
+
+	throw std::exception("Unknown command was received from client!");
+}
+
+AnsiString PokerLogicServer::Command::str()
+{
+	return cmd;
+}
+
+
+
+
+
+AnsiString PokerLogicServer::CmdNewConnection::execute()
+{
+	constexpr Balance START_PLAYER_BALANCE = 1000;
+
+	//Handle new connection
+	AnsiString nickname = Notifications::GetNotificationNamedArg(cmd, "Name");
+	AnsiString connetionStatus = "Fail";
+
+	//If connection is valid
+	TableInfo& table = logicServer->table;
+	PlayersRingQueue &players = table.players;
+	if (!players.playerExists(nickname))
+	{
+		static int id = 1;
+		players.push(new Player(nickname, START_PLAYER_BALANCE, id++));
+		connetionStatus = "Success";
+	}
+
+	if (players.size() == table.expectedPlayersCount)
+		logicServer->gameStarted = true;
+
+	logicServer->sendCommand(ptr_command(new CmdPlayersInfo(logicServer)));
+
+	if (logicServer->gameStarted)
+	{
+		logicServer->stageContext.setStage(new PreflopStage(table, logicServer->stageContext));
+		logicServer->sendCommand(ptr_command(new CmdStartGame));
+		logicServer->sendCommand(ptr_command(new CmdTableInfo(logicServer)));
+		logicServer->notifyObservers(logicServer->stageContext.update(table));
+	}
+	return connetionStatus;
+}
+
+
+AnsiString PokerLogicServer::CmdClientDecisionRequest::execute()
+{
+	//Handle player descision
+	TableInfo& table = logicServer->table;
+	Player* currentPlayer = table.players.front();
+
+	//Check if player action is possible
+	//if (!currentPlayer->hasAction(playerAction))
+		//return; //Ban
+
+	AnsiString playerAction = Notifications::GetNotificationNamedArg(cmd, "Action");
+	if (playerAction == "CHECK")
+	{
+
+	}
+	else if (playerAction == "CALL")
+	{
+		currentPlayer->makeBet(table.currentMaxBet - currentPlayer->getCurrentBet());
+	}
+	else if (playerAction == "BET")
+	{
+		Balance betValue = atoi(playerAction.c_str());
+		currentPlayer->makeBet(betValue);
+		table.currentMaxBet = betValue;
+	}
+	else if (playerAction == "RAISE")
+	{
+		//Args contins new max bet value
+		table.currentMaxBet = atoi(Notifications::GetNotificationNamedArg(cmd, "Value").c_str());
+		currentPlayer->makeBet(table.currentMaxBet - currentPlayer->getCurrentBet());
+	}
+	else if (playerAction == "FOLD")
+	{
+		currentPlayer->setActive(false);
+	}
+	else
+	{
+		//Error
+	}
+
+	logicServer->sendCommand(ptr_command(new CmdHideGui));
+	logicServer->sendCommand(ptr_command(new CmdTableInfo(logicServer)));
+	table.players.pop();
+
+	return logicServer->stageContext.update(table);
+}
+
+
+PokerLogicServer::CmdPlayersInfo::CmdPlayersInfo(PokerLogicServer * logicServer, const AnsiString & strCmd) : Command(logicServer, strCmd)
+{
+	if (logicServer == nullptr)
+		return;
+
+	auto& players = logicServer->table.players;
+
+	AnsiString allPlayers("");
+	int counter = 0;
+	for (const auto player : players.getPlayersData())
+		allPlayers += "player" + std::to_string(counter++) + ":" + player->getNickname() + "|";
+
+	cmd = Notifications::CreateNofiticationMessage("PlayersInfo", "PlayersCount:" + to_string(players.size()) + "|" + allPlayers);
+}
+
+
+
+//PokerLogicServer::CmdStartHand::CmdStartHand(PokerLogicServer * logicServer, const AnsiString & strCmd) : Command(logicServer, strCmd)
+//{
+//	if (logicServer == nullptr)
+//		return;
+//
+//	Player* currentPlayer = logicServer->table.players.front();
+//	cmd = Notifications::CreateNofiticationMessage("PlayerStackInfo",
+//	{
+//		"Player:" + currentPlayer->getNickname(),
+//		"Balance:" + to_string(currentPlayer->getBalance()),
+//		"Bet:" + to_string(currentPlayer->getCurrentBet()),
+//	});
+//}
+
+PokerLogicServer::CmdTableInfo::CmdTableInfo(PokerLogicServer * logicServer) : Command(logicServer)
+{
+	TableInfo& table = logicServer->table;
+	AnsiString tableInfo = "CurrentMaxBet:" + to_string(table.currentMaxBet) + "|"
+		+ "Pot:" + to_string(table.pot) + "|";
+
+	int index = 0;
+	for (auto& player : logicServer->table.players.getPlayersData())
+	{
+		AnsiString strIndex = to_string(index);
+		tableInfo += "Player" + strIndex + ":" + player->getNickname() + "|" +
+					   "Balance" + strIndex + ":" + to_string(player->getBalance()) + "|" +
+					   "Bet" + strIndex + ":" + to_string(player->getCurrentBet()) + "|";
+	}
+
+	cmd = Notifications::CreateNofiticationMessage("TableInfo", tableInfo);
+}
+
+
+PokerLogicServer::CmdSetCards::CmdSetCards(const Player * player) : Command(nullptr, "SetCards")
+{
+	auto cards = player->getCards();
+	cmd = Notifications::CreateNofiticationMessage("Cards",
+	{
+		"PlayerId:" + to_string(player->getId()),
+		"CardValue" + to_string(0) + ":" + to_string(cards.first.getValue()),
+		"CardSuit" + to_string(0) + ":" + to_string(cards.first.getSuit()),
+		"CardValue" + to_string(1) + ":" + to_string(cards.second.getValue()),
+		"CardSuit" + to_string(1) + ":" + to_string(cards.second.getSuit()),
+	});
 }

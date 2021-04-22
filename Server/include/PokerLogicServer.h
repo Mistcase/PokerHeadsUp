@@ -10,7 +10,6 @@
 
 #include <vector>
 #include <thread>
-#include <memory>
 
 using std::thread;
 using std::vector;
@@ -30,16 +29,10 @@ enum LOGIC_SERVER_INFO_TYPE
 class PokerLogicServer : public Observerable
 {
 private:
-	enum StageId
-	{
-		STAGE_PREFLOP,
-		STAGE_FLOP,
-		STAGE_TURN,
-		STAGE_RIVER
-	};
-
 	struct TableInfo
 	{
+		size_t expectedPlayersCount;
+
 		PlayersRingQueue players;
 		Player *button = nullptr;
 		Player *bb = nullptr;
@@ -52,8 +45,7 @@ private:
 	};
 
 	class Stage;
-	typedef std::shared_ptr<Stage> stage_ptr;
-
+	typedef shared_ptr<Stage> stage_ptr;
 	class StageContext
 	{
 	public:
@@ -62,7 +54,6 @@ private:
 	private:
 		stage_ptr stage;
 	};
-
 	class Stage
 	{
 	public:
@@ -87,23 +78,89 @@ private:
 		AnsiString identifyPlayerAction(const AnsiString& params = "") override;
 	};
 
+	class Command;
+	class ExecutableCommand;
+	typedef shared_ptr<Command> ptr_command;
+	typedef shared_ptr<ExecutableCommand> ptr_executable_command;
+	class Command
+	{
+	public:
+		Command(PokerLogicServer* logicServer = nullptr, const AnsiString& strCmd = "") : cmd(strCmd) {}
+		virtual ~Command() = default;
+
+		AnsiString str();
+
+	protected:
+		AnsiString cmd;
+	};
+	class ExecutableCommand : public Command
+	{
+	public:
+		static ptr_executable_command Create(const AnsiString& cmd, PokerLogicServer* logicServer = nullptr);
+
+		ExecutableCommand(PokerLogicServer* logicServer, const AnsiString& strCmd) : logicServer(logicServer), Command(nullptr, strCmd) {}
+		virtual AnsiString execute() = 0;
+
+	protected:
+		PokerLogicServer* logicServer;
+	};
+	class CmdNewConnection : public ExecutableCommand
+	{
+	public:
+		CmdNewConnection(PokerLogicServer* logicServer, const AnsiString& strCmd = "") : ExecutableCommand(logicServer, strCmd) {}
+		AnsiString execute() override final;
+	};
+	class CmdPlayersInfo : public Command
+	{
+	public:
+		CmdPlayersInfo(PokerLogicServer* logicServer, const AnsiString& strCmd = "");
+	};
+	class CmdStartGame : public Command
+	{
+	public:
+		CmdStartGame() : Command(nullptr, "StartGame") {}
+	};
+
+	/*class CmdStartHand : public Command
+	{
+	public:
+		CmdStartHand(PokerLogicServer* logicServer, const AnsiString& strCmd = "");
+	};*/
+
+	class CmdClientDecisionRequest : public ExecutableCommand
+	{
+	public:
+		CmdClientDecisionRequest(PokerLogicServer* logicServer, const AnsiString& strCmd = "") : ExecutableCommand(logicServer, strCmd) {}
+		AnsiString execute() override final;
+	};
+	class CmdHideGui : public Command
+	{
+	public:
+		CmdHideGui() : Command() {}
+	};
+	class CmdTableInfo : public Command
+	{
+	public:
+		CmdTableInfo(PokerLogicServer* logicServer);
+	};
+	class CmdSetCards : public Command
+	{
+	public:
+		CmdSetCards(const Player* player);
+	};
+
 public:
 	void setPlayersCount(size_t count);
 	void handleMessage(const AnsiString &message);
 
 private:
-	void handleNewConnectedPlayer(const AnsiString &message);
-	void handlePlayerDescision(const AnsiString &message);
-
-private:
-	//Observerable
+	void sendCommand(ptr_command command);
 	void notifyObservers(const EventMessageString &message = "") override;
 
 private:
 	StageContext stageContext;
 	TableInfo table;
 
-	size_t playersCount = 0;
 	bool handActive = false;
 	bool gameStarted = false;
 };

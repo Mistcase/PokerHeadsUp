@@ -1,10 +1,10 @@
 #include "GameState.h"
 
-GameState::GameState(StatesStack *statesStack, const sf::String &localPlayerName, network_mode::Value netMode)
+GameState::GameState(StatesStack *statesStack, const sf::String &localPlayerName)
 {
 	this->statesStack = statesStack;
 
-	if (!playersInit(localPlayerName) || !netInit(netMode) || !guiInit() || !sfmlGraphicsInit())
+	if (!playersInit(localPlayerName) || !netInit() || !guiInit() || !sfmlGraphicsInit())
 		exitState();
 }
 
@@ -46,7 +46,7 @@ bool GameState::playersInit(const String &localPlayerName)
 	return true;
 }
 
-bool GameState::netInit(network_mode::Value netMode)
+bool GameState::netInit()
 {
 	if (!netClient.connect(SERVER_ADDRESS))
 	{
@@ -54,7 +54,11 @@ bool GameState::netInit(network_mode::Value netMode)
 		return false;
 	}
 
-	netClient.sendMessage(Notifications::CreateNofiticationMessage("ConnectedPlayerName", localPlayer.getNickname()));
+	netClient.sendMessage(Notifications::CreateNofiticationMessage("NewConnection", 
+	{
+		"Name:" + localPlayer.getNickname(),
+		"",
+	}));
 	return true;
 }
 
@@ -271,7 +275,7 @@ void GameState::handleNetworkEvent(const EventMessageString &message)
 	{
 		showButtons("None");
 	}
-	else if (action == "PlayerStackInfo")
+	else if (action == "TableInfo")
 	{
 		Balance playerBalance = atoi(Notifications::GetNotificationNamedArg(message, "Balance").c_str());
 		Balance betValue = atoi(Notifications::GetNotificationNamedArg(message, "Bet").c_str());

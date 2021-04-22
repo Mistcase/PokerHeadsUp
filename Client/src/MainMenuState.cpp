@@ -16,7 +16,7 @@ void MainMenuState::update(float deltaTime, const Vector2f& mousePos)
 {
 	loginBox.update(mousePos, deltaTime);
 	btnConnect.update(mousePos);
-	btnCreateGame.update(mousePos);
+	//btnCreateGame.update(mousePos);
 }
 
 void MainMenuState::updateSfmlEvent(sf::Event& ev)
@@ -33,13 +33,7 @@ void MainMenuState::handleEvent(const EventMessage& message)
 		return;
 
 	if (message.sender == &btnConnect)
-	{
-		statesStack->push(new GameState(statesStack, loginBox.getText(), network_mode::Value::JUST_CONNECT));
-	}
-	if (message.sender == &btnCreateGame)
-	{
-		statesStack->push(new GameState(statesStack, loginBox.getText(), network_mode::Value::OPEN_SERVER));
-	}
+		statesStack->push(new GameState(statesStack, loginBox.getText()));
 }
 
 void MainMenuState::initGui()
@@ -54,23 +48,23 @@ void MainMenuState::initGui()
 	buttonProrotype.setCharacterSize(16);
 
 	btnConnect = Button(buttonProrotype);
-	btnCreateGame = Button(buttonProrotype);
+	//btnCreateGame = Button(buttonProrotype);
 
 	btnConnect.setText("Connect");
 	btnConnect.setPosition(Vector2f(350, 320));
 
-	btnCreateGame.setText("Start server");
-	btnCreateGame.setPosition(Vector2f(350, 350));
+	//btnCreateGame.setText("Start server");
+	//btnCreateGame.setPosition(Vector2f(350, 350));
 
 	btnConnect.addObserver(this);
-	btnCreateGame.addObserver(this);
+	//btnCreateGame.addObserver(this);
 }
 
 void MainMenuState::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
 	target.draw(loginBox, states);
 	target.draw(btnConnect, states);
-	target.draw(btnCreateGame, states);
+	//target.draw(btnCreateGame, states);
 }
 
 sf::Color MainMenuState::BACKGROUND_COLOR = sf::Color(246, 246, 246);
