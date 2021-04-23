@@ -11,7 +11,7 @@
 class Notifications
 {
 public:
-	static AnsiString CreateNofiticationMessage(const AnsiString& action, const AnsiString& args);
+	static AnsiString CreateNofiticationMessage(const AnsiString& action, const AnsiString& args = "");
 	static AnsiString CreateNofiticationMessage(const AnsiString& action, const std::vector<AnsiString>& namedArgs);
 	static AnsiString GetNotificationAction(const AnsiString& msg);
 	static AnsiString GetNotificationArgs(const AnsiString& msg);

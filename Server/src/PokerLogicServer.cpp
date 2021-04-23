@@ -14,7 +14,7 @@ void PokerLogicServer::handleMessage(const AnsiString &message)
 
 	ExecutableCommand::Create(message, this)->execute();
 
-	////Update players cards info
+	//Update players cards info
 	if (gameStarted)
 	{
 		for (const auto player : table.players.getPlayersData())
@@ -70,6 +70,14 @@ void PokerLogicServer::StageContext::setStage(Stage * newStage)
 }
 
 
+PokerLogicServer::Stage::~Stage()
+{
+	for (auto player : table->players.getPlayersData())
+		table->pot += player->getCurrentBet();
+	table->players.zeroAllBets();
+}
+
+
 
 
 PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext& stageContext) : Stage(table, stageContext)
@@ -87,8 +95,6 @@ PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext& sta
 		player->removeAllActions();
 		player->setCards(deck.removeTopCard(), deck.removeTopCard());
 	}
-
-	//handActive = true;
 
 	//Set button player
 	table.button = players.front();
@@ -118,19 +124,19 @@ AnsiString PokerLogicServer::PreflopStage::identifyPlayerAction(const AnsiString
 	if (currentPlayer == table->bb)
 	{
 
-		return Notifications::CreateNofiticationMessage("MakeDescision",
-			{
-				"Player:" + currentPlayer->getNickname(),
-				AnsiString("ButtonMode:") + (players->allBetsAreEaqual() ? "CHECK_RAISE" : "CALL_RAISE_FOLD"),
-			});
+		return Notifications::CreateNofiticationMessage("MakeDecision",
+		{
+			"Player:" + currentPlayer->getNickname(),
+			AnsiString("ButtonMode:") + (players->allBetsAreEaqual() ? "CHECK_RAISE" : "CALL_RAISE_FOLD"),
+		});
 	}
 	else
 	{
-		return Notifications::CreateNofiticationMessage("MakeDescision",
-			{
-				"Player:" + currentPlayer->getNickname(),
-				"ButtonMode:CALL_RAISE_FOLD",
-			});
+		return Notifications::CreateNofiticationMessage("MakeDecision",
+		{
+			"Player:" + currentPlayer->getNickname(),
+			"ButtonMode:CALL_RAISE_FOLD",
+		});
 	}
 }
 
@@ -142,7 +148,6 @@ PokerLogicServer::NonPreflopStage::NonPreflopStage(TableInfo &table, StageContex
 	table.interviewedPlayers = 0;
 
 	auto& players = table.players;
-	players.zeroAllBets();
 	while (players.front() != table.sb)
 		players.pop();
 }
@@ -154,19 +159,19 @@ AnsiString PokerLogicServer::NonPreflopStage::identifyPlayerAction(const AnsiStr
 
 	if (currentPlayer->getCurrentBet() < table->currentMaxBet)
 	{
-		return Notifications::CreateNofiticationMessage("MakeDescision",
-			{
-				"Player:" + currentPlayer->getNickname(),
-				"ButtonMode:CALL_RAISE_FOLD",
-			});
+		return Notifications::CreateNofiticationMessage("MakeDecision",
+		{
+			"Player:" + currentPlayer->getNickname(),
+			"ButtonMode:CALL_RAISE_FOLD",
+		});
 	}
 	else
 	{
-		return Notifications::CreateNofiticationMessage("MakeDescision",
-			{
-				"Player:" + currentPlayer->getNickname(),
-				"ButtonMode:CHECK_BET",
-			});
+		return Notifications::CreateNofiticationMessage("MakeDecision",
+		{
+			"Player:" + currentPlayer->getNickname(),
+			"ButtonMode:CHECK_BET",
+		});
 	}
 }
 
@@ -194,7 +199,7 @@ AnsiString PokerLogicServer::Command::str()
 
 
 
-AnsiString PokerLogicServer::CmdNewConnection::execute()
+void PokerLogicServer::CmdNewConnection::execute()
 {
 	constexpr Balance START_PLAYER_BALANCE = 1000;
 
@@ -221,14 +226,14 @@ AnsiString PokerLogicServer::CmdNewConnection::execute()
 	{
 		logicServer->stageContext.setStage(new PreflopStage(table, logicServer->stageContext));
 		logicServer->sendCommand(ptr_command(new CmdStartGame));
+		logicServer->sendCommand(ptr_command(new CmdStartHand(logicServer)));
 		logicServer->sendCommand(ptr_command(new CmdTableInfo(logicServer)));
 		logicServer->notifyObservers(logicServer->stageContext.update(table));
 	}
-	return connetionStatus;
 }
 
 
-AnsiString PokerLogicServer::CmdClientDecisionRequest::execute()
+void PokerLogicServer::CmdClientDecisionRequest::execute()
 {
 	//Handle player descision
 	TableInfo& table = logicServer->table;
@@ -249,7 +254,7 @@ AnsiString PokerLogicServer::CmdClientDecisionRequest::execute()
 	}
 	else if (playerAction == "BET")
 	{
-		Balance betValue = atoi(playerAction.c_str());
+		Balance betValue = atoi(Notifications::GetNotificationNamedArg(cmd, "Value").c_str());
 		currentPlayer->makeBet(betValue);
 		table.currentMaxBet = betValue;
 	}
@@ -269,10 +274,10 @@ AnsiString PokerLogicServer::CmdClientDecisionRequest::execute()
 	}
 
 	logicServer->sendCommand(ptr_command(new CmdHideGui));
-	logicServer->sendCommand(ptr_command(new CmdTableInfo(logicServer)));
 	table.players.pop();
 
-	return logicServer->stageContext.update(table);
+	logicServer->notifyObservers(logicServer->stageContext.update(table));
+	logicServer->sendCommand(ptr_command(new CmdTableInfo(logicServer))); //Send table info after stage updating
 }
 
 
@@ -292,31 +297,18 @@ PokerLogicServer::CmdPlayersInfo::CmdPlayersInfo(PokerLogicServer * logicServer,
 }
 
 
-
-//PokerLogicServer::CmdStartHand::CmdStartHand(PokerLogicServer * logicServer, const AnsiString & strCmd) : Command(logicServer, strCmd)
-//{
-//	if (logicServer == nullptr)
-//		return;
-//
-//	Player* currentPlayer = logicServer->table.players.front();
-//	cmd = Notifications::CreateNofiticationMessage("PlayerStackInfo",
-//	{
-//		"Player:" + currentPlayer->getNickname(),
-//		"Balance:" + to_string(currentPlayer->getBalance()),
-//		"Bet:" + to_string(currentPlayer->getCurrentBet()),
-//	});
-//}
-
 PokerLogicServer::CmdTableInfo::CmdTableInfo(PokerLogicServer * logicServer) : Command(logicServer)
 {
 	TableInfo& table = logicServer->table;
-	AnsiString tableInfo = "CurrentMaxBet:" + to_string(table.currentMaxBet) + "|"
-		+ "Pot:" + to_string(table.pot) + "|";
+	AnsiString tableInfo =
+		"CurrentMaxBet:" + to_string(table.currentMaxBet) + "|" +
+		"Pot:" + to_string(table.pot) + "|" +
+		"PlayersCount:" + to_string(table.expectedPlayersCount) + "|";
 
 	int index = 0;
-	for (auto& player : logicServer->table.players.getPlayersData())
+	for (const auto player : logicServer->table.players.getPlayersData())
 	{
-		AnsiString strIndex = to_string(index);
+		AnsiString strIndex = to_string(index++);
 		tableInfo += "Player" + strIndex + ":" + player->getNickname() + "|" +
 					   "Balance" + strIndex + ":" + to_string(player->getBalance()) + "|" +
 					   "Bet" + strIndex + ":" + to_string(player->getCurrentBet()) + "|";
@@ -326,7 +318,8 @@ PokerLogicServer::CmdTableInfo::CmdTableInfo(PokerLogicServer * logicServer) : C
 }
 
 
-PokerLogicServer::CmdSetCards::CmdSetCards(const Player * player) : Command(nullptr, "SetCards")
+PokerLogicServer::CmdSetCards::CmdSetCards(const Player * player) 
+	: Command(nullptr, "SetCards")
 {
 	auto cards = player->getCards();
 	cmd = Notifications::CreateNofiticationMessage("Cards",
@@ -336,5 +329,19 @@ PokerLogicServer::CmdSetCards::CmdSetCards(const Player * player) : Command(null
 		"CardSuit" + to_string(0) + ":" + to_string(cards.first.getSuit()),
 		"CardValue" + to_string(1) + ":" + to_string(cards.second.getValue()),
 		"CardSuit" + to_string(1) + ":" + to_string(cards.second.getSuit()),
+	});
+}
+
+
+PokerLogicServer::CmdStartHand::CmdStartHand(PokerLogicServer * logicServer) 
+	: Command(logicServer)
+{
+	TableInfo& table = logicServer->table;
+	cmd = Notifications::CreateNofiticationMessage("StartHand", 
+	{
+		"button:" + table.button->getNickname(),
+		"sbp:" + table.sb->getNickname(),
+		"bbp:" + table.bb->getNickname(),
+		"sbv:" + to_string(table.smallBlind),
 	});
 }

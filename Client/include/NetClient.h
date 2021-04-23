@@ -4,7 +4,6 @@
 #include <Types.h>
 #include <TcpClient.hpp>
 
-
 class NetClient
 {
 public:

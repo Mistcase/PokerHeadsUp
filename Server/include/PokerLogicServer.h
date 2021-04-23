@@ -14,18 +14,6 @@
 using std::thread;
 using std::vector;
 
-enum LOGIC_SERVER_INFO_TYPE
-{
-	INFO_BUTTON_PLAYER_NICKNAME,
-	INFO_ALL_PLAYERS,
-	INFO_CURRENT_PLAYER_NICKNAME,
-	INFO_NEXT_PLAYER_NICKNAME,
-	INFO_SMALL_BLIND_VALUE,
-	INFO_BB_PLAYER_NICKNAME,
-	INFO_SB_PLAYER_NICKNAME,
-	INFO_TYPES_COUNT
-};
-
 class PokerLogicServer : public Observerable
 {
 private:
@@ -41,6 +29,7 @@ private:
 		Balance smallBlind = 10, currentMaxBet = 0, pot = 0;
 		size_t interviewedPlayers = 0;
 		
+		vector<Card> boardCards;
 		Deck deck;
 	};
 
@@ -58,6 +47,7 @@ private:
 	{
 	public:
 		Stage(TableInfo& table, StageContext& stageContext) : table(&table), stageContext(&stageContext) { table.interviewedPlayers = 0;}
+		virtual ~Stage();
 
 		virtual AnsiString identifyPlayerAction(const AnsiString& params = "") = 0;
 
@@ -76,6 +66,13 @@ private:
 	public:
 		NonPreflopStage(TableInfo& table, StageContext& stageContext);
 		AnsiString identifyPlayerAction(const AnsiString& params = "") override;
+	};
+	enum StageId : int32_t
+	{
+		STAGE_PREFLOP,
+		STAGE_FLOP,
+		STAGE_TURN,
+		STAGE_RIVER,
 	};
 
 	class Command;
@@ -99,7 +96,7 @@ private:
 		static ptr_executable_command Create(const AnsiString& cmd, PokerLogicServer* logicServer = nullptr);
 
 		ExecutableCommand(PokerLogicServer* logicServer, const AnsiString& strCmd) : logicServer(logicServer), Command(nullptr, strCmd) {}
-		virtual AnsiString execute() = 0;
+		virtual void execute() = 0;
 
 	protected:
 		PokerLogicServer* logicServer;
@@ -108,7 +105,7 @@ private:
 	{
 	public:
 		CmdNewConnection(PokerLogicServer* logicServer, const AnsiString& strCmd = "") : ExecutableCommand(logicServer, strCmd) {}
-		AnsiString execute() override final;
+		void execute() override final;
 	};
 	class CmdPlayersInfo : public Command
 	{
@@ -118,25 +115,23 @@ private:
 	class CmdStartGame : public Command
 	{
 	public:
-		CmdStartGame() : Command(nullptr, "StartGame") {}
+		CmdStartGame() : Command(nullptr, Notifications::CreateNofiticationMessage("StartGame")) {}
 	};
-
-	/*class CmdStartHand : public Command
+	class CmdStartHand : public Command
 	{
 	public:
-		CmdStartHand(PokerLogicServer* logicServer, const AnsiString& strCmd = "");
-	};*/
-
+		CmdStartHand(PokerLogicServer* logicServer);
+	};
 	class CmdClientDecisionRequest : public ExecutableCommand
 	{
 	public:
 		CmdClientDecisionRequest(PokerLogicServer* logicServer, const AnsiString& strCmd = "") : ExecutableCommand(logicServer, strCmd) {}
-		AnsiString execute() override final;
+		void execute() override final;
 	};
 	class CmdHideGui : public Command
 	{
 	public:
-		CmdHideGui() : Command() {}
+		CmdHideGui() : Command(nullptr, Notifications::CreateNofiticationMessage("HideGui")) {}
 	};
 	class CmdTableInfo : public Command
 	{
@@ -147,6 +142,10 @@ private:
 	{
 	public:
 		CmdSetCards(const Player* player);
+	};
+	class CmdSetBoardCards : public Command
+	{
+		CmdSetBoardCards(const vector<Card>& cards);
 	};
 
 public:
@@ -161,7 +160,6 @@ private:
 	StageContext stageContext;
 	TableInfo table;
 
-	bool handActive = false;
 	bool gameStarted = false;
 };
 

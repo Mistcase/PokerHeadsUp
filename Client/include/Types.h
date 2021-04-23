@@ -36,4 +36,6 @@ typedef unsigned int Balance;
 typedef unsigned int Bet;
 typedef std::string AnsiString;
 
+inline int ToInt(const AnsiString &str) { return atoi(str.c_str()); }
+
 #endif

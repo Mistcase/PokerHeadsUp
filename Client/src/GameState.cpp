@@ -22,19 +22,19 @@ void GameState::handleEvent(const EventMessage &message)
 {
 	if (message.sender == &netClient)
 	{
-		handleNetworkEvent(message.params);
+		try
+		{
+			Command::Create(message.params, this)->execute();
+		}
+		catch (std::exception& ex)
+		{
+			std::cout << ex.what() << std::endl;
+		}
 	}
 	else
 	{
 		handleGuiEvent(message);
 	}
-}
-
-void GameState::notifyObservers(const EventMessageString &messageString)
-{
-	EventMessage message(this, messageString);
-	for (auto &obs : observers)
-		obs->handleEvent(message);
 }
 
 bool GameState::playersInit(const String &localPlayerName)
@@ -54,11 +54,7 @@ bool GameState::netInit()
 		return false;
 	}
 
-	netClient.sendMessage(Notifications::CreateNofiticationMessage("NewConnection", 
-	{
-		"Name:" + localPlayer.getNickname(),
-		"",
-	}));
+	netClient.sendMessage(CmdNewConnection(this).str());
 	return true;
 }
 
@@ -109,6 +105,21 @@ bool GameState::sfmlGraphicsInit()
 	background.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - background.getSize().x / 2,
 						   APPLICATION_WINDOW_SIZE.y / 2 - background.getSize().y / 2);
 
+	//Board Cards
+	constexpr float CARDS_DISTANCE = 5.f;
+	Vector2f cardsShape = Vector2f(5 * GAMESTATE_CARD_SIZE.x + 4 * CARDS_DISTANCE, GAMESTATE_CARD_SIZE.y);
+	Vector2f currentCardPoint = Vector2f(APPLICATION_WINDOW_SIZE.x / 2 - cardsShape.x / 2, APPLICATION_WINDOW_SIZE.y / 2 - cardsShape.y / 2);
+	for (int i = 0; i < BOARD_CARDS_COUNT; i++)
+	{
+		boardCards[i].setFillColor(Color(255, 255, 255, 50));
+		//boardCards[i].setOutlineColor(Color::White);
+		//boardCards[i].setOutlineThickness(1.f);
+		boardCards[i].setSize(GAMESTATE_CARD_SIZE);
+		boardCards[i].setPosition(currentCardPoint);
+		currentCardPoint.x += GAMESTATE_CARD_SIZE.x + CARDS_DISTANCE;
+	}
+
+
 	pot.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
 	pot.setCharacterSize(16);
 	pot.setString("Pot: 0");
@@ -148,159 +159,6 @@ void GameState::updateGraphicsEntities()
 	pot.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - potParams.width / 2, APPLICATION_WINDOW_SIZE.y / 2 - potParams.height / 2);
 }
 
-void GameState::handleNetworkEvent(const EventMessageString &message)
-{
-	std::cout << "Update message -> " << message << std::endl;
-
-	auto showButtons = [&](const AnsiString &buttonsNotation) {
-		auto findPositionForButton = [&]() {
-			const sf::Vector2f OFFSET = GAMESTATE_BUTTON_SIZE + sf::Vector2f(5.f, 0);
-
-			size_t activeButtonsCounter = 0;
-			for (auto &btn : buttons)
-			{
-				if (btn.active)
-					activeButtonsCounter++;
-			}
-
-			sf::Vector2f result = APPLICATION_WINDOW_SIZE - sf::Vector2f((OFFSET.x + 5.f) * (activeButtonsCounter + 1), OFFSET.y + 5.f);
-
-			return result;
-		};
-
-		for (auto &btn : buttons)
-			btn.active = false;
-
-		if (buttonsNotation == "None")
-			return;
-
-		if (buttonsNotation == "CHECK_BET")
-		{
-			buttons[BTN_CHECK].setPosition(findPositionForButton());
-			buttons[BTN_CHECK].active = true;
-
-			buttons[BTN_BET].setPosition(findPositionForButton());
-			buttons[BTN_BET].active = true;
-		}
-		else if (buttonsNotation == "CALL_RAISE_FOLD")
-		{
-			buttons[BTN_CALL].setPosition(findPositionForButton());
-			buttons[BTN_CALL].active = true;
-
-			buttons[BTN_RAISE].setPosition(findPositionForButton());
-			buttons[BTN_RAISE].active = true;
-
-			buttons[BTN_FOLD].setPosition(findPositionForButton());
-			buttons[BTN_FOLD].active = true;
-		}
-		else if (buttonsNotation == "CHECK_RAISE")
-		{
-			buttons[BTN_CHECK].setPosition(findPositionForButton());
-			buttons[BTN_CHECK].active = true;
-
-			buttons[BTN_RAISE].setPosition(findPositionForButton());
-			buttons[BTN_RAISE].active = true;
-		}
-		else
-		{
-			//Error
-		}
-	};
-	auto toInt = [](const AnsiString &str) { return atoi(str.c_str()); };
-
-	AnsiString action = Notifications::GetNotificationAction(message);
-	if (action == "PlayersInfo")
-	{
-		//Occurs when a player connects. Players information is received by each client
-		int playersCount = toInt(Notifications::GetNotificationNamedArg(message, "PlayersCount"));
-
-		vector<AnsiString> players(playersCount);
-		for (int i = 0; i < playersCount; i++)
-		{
-			players[i] = Notifications::GetNotificationNamedArg(message, "player" + std::to_string(i));
-			if (players[i] != localPlayer.getNickname())
-			{
-				opponentPlayer.setNickname(players[i]);
-				std::cout << "Opponent nickname: " << players[i] << std::endl;
-			}
-		}
-	}
-	else if (action == "StartGame")
-	{
-		std::cout << "Game Started!\n";
-		//This is heads up version
-		// int playersCount = toInt(Notifications::GetNotificationNamedArg(message, "PlayersCount"));
-		// if (playersCount != 2) //Error
-		// 	SfmlMessageBox("Game version: HeadUp! Player count = " + std::to_string(playersCount), "Network event handling error").show();
-	}
-	else if (action == "StartHand")
-	{
-		AnsiString player = Notifications::GetNotificationNamedArg(message, "button");
-		if (player == localPlayer.getNickname())
-		{
-			tableButton.setTableSlot(table_slots::BOTTOM);
-		}
-		else if (player == opponentPlayer.getNickname())
-		{
-			tableButton.setTableSlot(table_slots::TOP);
-		}
-		else
-		{
-			//Error
-			SfmlMessageBox("Button player is unknown: " + player, "Exception!").show();
-		}
-
-		AnsiString sbp = Notifications::GetNotificationNamedArg(message, "sbp"),
-				   bbp = Notifications::GetNotificationNamedArg(message, "bbp"),
-				   sbv = Notifications::GetNotificationNamedArg(message, "sbv");
-
-		int smallBlind = atoi(sbv.c_str());
-		
-		Player* sbPlayer = getPlayer(sbp);
-		Player* bbPlayer = getPlayer(bbp);
-
-		sbPlayer->makeBet(smallBlind);
-		bbPlayer->makeBet(2 * smallBlind);
-	}
-	else if (action == "MakeDescision")
-	{
-		if (Notifications::GetNotificationNamedArg(message, "Player") == localPlayer.getNickname())
-			showButtons(Notifications::GetNotificationNamedArg(message, "ButtonMode"));
-	}
-	else if (action == "ClientAnswer")
-	{
-		notifyObservers(message);
-	}
-	else if (action == "HideGui")
-	{
-		showButtons("None");
-	}
-	else if (action == "TableInfo")
-	{
-		Balance playerBalance = atoi(Notifications::GetNotificationNamedArg(message, "Balance").c_str());
-		Balance betValue = atoi(Notifications::GetNotificationNamedArg(message, "Bet").c_str());
-
-		Player* player = getPlayer(Notifications::GetNotificationNamedArg(message, "Player"));
-		player->setBalance(playerBalance);
-		player->setBet(betValue);
-	}
-	else if (action == "Cards")
-	{
-		Deck::CardsValuesGraphicsId val[2];
-		Deck::CardsSuitsGraphicsId suit[2];
-		for (int i = 0; i < 2; i++)
-		{
-			val[i] = static_cast<Deck::CardsValuesGraphicsId>(atoi(Notifications::GetNotificationNamedArg(message, "CardValue" + to_string(i)).c_str()) - 1);
-			suit[i] = static_cast<Deck::CardsSuitsGraphicsId>(atoi(Notifications::GetNotificationNamedArg(message, "CardSuit" + to_string(i)).c_str()) - 1);
-		}
-		localPlayer.setCards(Card(val[0], suit[0]), Card(val[1], suit[1]));
-	}
-	else
-	{
-		std::cout << "Unknown message: " << message << std::endl;
-	}
-}
-
 Player *GameState::getPlayer(const AnsiString &nickname) const
 {
 	if (localPlayer.getNickname() == nickname)
@@ -318,11 +176,68 @@ void GameState::handleGuiEvent(const EventMessage &message)
 
 	AnsiString args = "Action:" + buttonText + "|";
 
-	if (buttonText == "RAISE")
+	if (buttonText == "BET" || buttonText == "RAISE")
 		args += "Value:" + raiseTextBox.getText() + "|";
 	
-	netClient.sendMessage(Notifications::CreateNofiticationMessage("ClientDescision", args));
+
+	netClient.sendMessage(CmdPlayerDecisionRequest(args).str());
 }
+
+void GameState::showButtons(const AnsiString & buttonsNotation)
+{
+	auto findPositionForButton = [&]() {
+		const sf::Vector2f OFFSET = GAMESTATE_BUTTON_SIZE + sf::Vector2f(5.f, 0);
+
+		size_t activeButtonsCounter = 0;
+		for (auto &btn : buttons)
+		{
+			if (btn.active)
+				activeButtonsCounter++;
+		}
+
+		sf::Vector2f result = APPLICATION_WINDOW_SIZE - sf::Vector2f((OFFSET.x + 5.f) * (activeButtonsCounter + 1), OFFSET.y + 5.f);
+
+		return result;
+	};
+
+	for (auto &btn : buttons)
+		btn.active = false;
+
+	if (buttonsNotation == "None")
+		return;
+
+	if (buttonsNotation == "CHECK_BET")
+	{
+		buttons[BTN_CHECK].setPosition(findPositionForButton());
+		buttons[BTN_CHECK].active = true;
+
+		buttons[BTN_BET].setPosition(findPositionForButton());
+		buttons[BTN_BET].active = true;
+	}
+	else if (buttonsNotation == "CALL_RAISE_FOLD")
+	{
+		buttons[BTN_CALL].setPosition(findPositionForButton());
+		buttons[BTN_CALL].active = true;
+
+		buttons[BTN_RAISE].setPosition(findPositionForButton());
+		buttons[BTN_RAISE].active = true;
+
+		buttons[BTN_FOLD].setPosition(findPositionForButton());
+		buttons[BTN_FOLD].active = true;
+	}
+	else if (buttonsNotation == "CHECK_RAISE")
+	{
+		buttons[BTN_CHECK].setPosition(findPositionForButton());
+		buttons[BTN_CHECK].active = true;
+
+		buttons[BTN_RAISE].setPosition(findPositionForButton());
+		buttons[BTN_RAISE].active = true;
+	}
+	else
+	{
+		SfmlMessageBox("Unknown buttons notation: " + buttonsNotation, "Error").show();
+	}
+};
 
 void GameState::update(float deltaTime, const Vector2f &mousePos)
 {
@@ -332,22 +247,162 @@ void GameState::update(float deltaTime, const Vector2f &mousePos)
 
 	localPlayer.update();
 	opponentPlayer.update();
-
-	//std::cout << pokerGameServer.getPlayersCount() << std::endl;
 }
 
 void GameState::draw(sf::RenderTarget &target, sf::RenderStates states) const
 {
 	target.draw(background, states);
+
+	for (auto& card : boardCards)
+		target.draw(card, states);
+
 	target.draw(pot, states);
+	target.draw(tableButton, states);
 	target.draw(localPlayer, states);
 	target.draw(opponentPlayer, states);
 
-	target.draw(tableButton, states);
-
 	for (auto &btn : buttons)
-	{
 		target.draw(btn, states);
-	}
+
 	target.draw(raiseTextBox);
+}
+
+
+
+
+//-------------------------------Commands-------------------------------
+const AnsiString & GameState::Command::str() const
+{
+	return cmd;
+}
+
+GameState::ptr_command GameState::Command::Create(const AnsiString & cmd, GameState* gs)
+{
+	AnsiString action = Notifications::GetNotificationAction(cmd);
+
+	if (action == "PlayersInfo")
+		return ptr_command(new CmdSetPlayers(cmd, gs));
+	if (action == "StartGame")
+		return ptr_command(new CmdStartGame(cmd, gs));
+	if (action == "StartHand")
+		return ptr_command(new CmdStartHand(cmd, gs));
+	if (action == "Cards")
+		return ptr_command(new CmdSetCards(cmd, gs));
+	if (action == "TableInfo")
+		return ptr_command(new CmdSetTable(cmd, gs));
+	if (action == "MakeDecision")
+		return ptr_command(new CmdPlayerDecisionRequest(cmd, gs));
+	if (action == "HideGui")
+		return ptr_command(new CmdHideGui(gs));
+
+	throw std::exception(AnsiString("Unknown command was received from server: " + action).c_str());
+}
+
+void GameState::CmdNewConnection::execute()
+{
+	throw std::exception("Cannot execute command -> CmdNewConnection");
+}
+
+void GameState::CmdSetPlayers::execute()
+{
+	//Occurs when a player connects. Players information is received by each client
+	int playersCount = ToInt(Notifications::GetNotificationNamedArg(cmd, "PlayersCount"));
+
+	vector<AnsiString> players(playersCount);
+	for (int i = 0; i < playersCount; i++)
+	{
+		players[i] = Notifications::GetNotificationNamedArg(cmd, "player" + std::to_string(i));
+		if (players[i] != gameState->localPlayer.getNickname())
+			gameState->opponentPlayer.setNickname(players[i]);
+	}
+}
+
+void GameState::CmdStartGame::execute()
+{
+
+}
+
+void GameState::CmdStartHand::execute()
+{
+	AnsiString player = Notifications::GetNotificationNamedArg(cmd, "button");
+	if (player == gameState->localPlayer.getNickname())
+		gameState->tableButton.setTableSlot(table_slots::BOTTOM);
+	else if (player == gameState->opponentPlayer.getNickname())
+		gameState->tableButton.setTableSlot(table_slots::TOP);
+	else
+		SfmlMessageBox("Button player is unknown: " + player, "Exception!").show();
+
+	AnsiString sbp = Notifications::GetNotificationNamedArg(cmd, "sbp"),
+		bbp = Notifications::GetNotificationNamedArg(cmd, "bbp"),
+		sbv = Notifications::GetNotificationNamedArg(cmd, "sbv");
+
+	int smallBlind = ToInt(sbv.c_str());
+
+	Player* sbPlayer = gameState->getPlayer(sbp);
+	Player* bbPlayer = gameState->getPlayer(bbp);
+
+	sbPlayer->makeBet(smallBlind);
+	bbPlayer->makeBet(2 * smallBlind);
+}
+
+void GameState::CmdPlayerDecisionRequest::execute()
+{
+	if (Notifications::GetNotificationNamedArg(cmd, "Player") == gameState->localPlayer.getNickname())
+		gameState->showButtons(Notifications::GetNotificationNamedArg(cmd, "ButtonMode"));
+}
+
+void GameState::CmdHideGui::execute()
+{
+	gameState->showButtons("None");
+}
+
+void GameState::CmdSetTable::execute()
+{
+	Balance currentMaxBet = ToInt(Notifications::GetNotificationNamedArg(cmd, "CurrentMaxBet"));
+	Balance pot = ToInt(Notifications::GetNotificationNamedArg(cmd, "Pot"));
+	Balance playersCount = ToInt(Notifications::GetNotificationNamedArg(cmd, "PlayersCount"));
+
+	gameState->pot.setString("Pot: " + to_string(pot));
+
+	for (int i = 0; i < playersCount; i++)
+	{
+		AnsiString strIndex = to_string(i);
+		Player* player = gameState->getPlayer(Notifications::GetNotificationNamedArg(cmd, "Player" + strIndex));
+		player->setBalance(ToInt(Notifications::GetNotificationNamedArg(cmd, "Balance" + strIndex)));
+		player->setBet(ToInt(Notifications::GetNotificationNamedArg(cmd, "Bet" + strIndex)));
+	}
+}
+
+void GameState::CmdSetCards::execute()
+{
+	Deck::CardsValuesGraphicsId val[2];
+	Deck::CardsSuitsGraphicsId suit[2];
+	for (int i = 0; i < 2; i++)
+	{
+		val[i] = static_cast<Deck::CardsValuesGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardValue" + to_string(i))) - 1);
+		suit[i] = static_cast<Deck::CardsSuitsGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardSuit" + to_string(i))) - 1);
+	}
+	gameState->localPlayer.setCards(Card(val[0], suit[0]), Card(val[1], suit[1]));
+}
+
+void GameState::CmdOpenBoardCards::execute()
+{
+	AnsiString stage = Notifications::GetNotificationNamedArg(cmd, "Stage");
+
+	vector<size_t> cardsIndexes;
+	if (stage == "Flop")
+		cardsIndexes = { 0, 1, 2 };
+	else if (stage == "Turn")
+		cardsIndexes = { 3 };
+	else if (stage == "River")
+		cardsIndexes = { 4 };
+	else
+		SfmlMessageBox("GameState::CmdOpenBoardCards -> Unknown stage -> " + stage, "Error").show();
+
+	for (size_t index : cardsIndexes)
+	{
+		Deck::setCard(&gameState->boardCards[index],
+			static_cast<Deck::CardsValuesGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardValue" + to_string(index))) - 1),
+			static_cast<Deck::CardsSuitsGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardSuit" + to_string(index))) - 1));
+	}
 }
