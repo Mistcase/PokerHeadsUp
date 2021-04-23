@@ -7,6 +7,7 @@
 #include "Observer.h"
 #include "Player.h"
 #include "Deck.h"
+#include "CombinationIdentifier.h"
 
 #include <vector>
 #include <thread>
@@ -29,50 +30,73 @@ private:
 		Balance smallBlind = 10, currentMaxBet = 0, pot = 0;
 		size_t interviewedPlayers = 0;
 		
-		vector<Card> boardCards;
+		array<Card, 5> boardCards;
 		Deck deck;
 	};
 
 	class Stage;
 	typedef shared_ptr<Stage> stage_ptr;
-	class StageContext
-	{
-	public:
-		AnsiString update(TableInfo& table);
-		void setStage(Stage* newStage);
-	private:
-		stage_ptr stage;
-	};
-	class Stage
-	{
-	public:
-		Stage(TableInfo& table, StageContext& stageContext) : table(&table), stageContext(&stageContext) { table.interviewedPlayers = 0;}
-		virtual ~Stage();
 
-		virtual AnsiString identifyPlayerAction(const AnsiString& params = "") = 0;
-
-	protected:
-		TableInfo* table;
-		StageContext* stageContext;
-	};
-	class PreflopStage : public Stage
-	{
-	public:
-		PreflopStage(TableInfo& table, StageContext& stageContext);
-		AnsiString identifyPlayerAction(const AnsiString& params = "") override;
-	};
-	class NonPreflopStage : public Stage
-	{
-	public:
-		NonPreflopStage(TableInfo& table, StageContext& stageContext);
-		AnsiString identifyPlayerAction(const AnsiString& params = "") override;
-	};
 	enum StageId : int32_t
 	{
 		STAGE_PREFLOP,
 		STAGE_FLOP,
 		STAGE_TURN,
 		STAGE_RIVER,
+		STAGE_WINNER_EXISTS,
+	};
+
+	class StageContext
+	{
+	public:
+		StageContext(PokerLogicServer* logicServer) : logicServer(logicServer) {}
+
+		void update();
+		void setStage(Stage* newStage);
+
+	private:
+		stage_ptr stage;
+		PokerLogicServer* logicServer;
+	};
+
+	class Stage
+	{
+	public:
+		Stage(PokerLogicServer* logicServer);
+		virtual ~Stage() = default;
+
+		StageId getId();
+
+		virtual void update() = 0;
+
+	protected:
+		PokerLogicServer* logicServer;
+		StageContext* stageContext;
+		StageId id;
+	};
+
+	class PreflopStage : public Stage
+	{
+	public:
+		PreflopStage(PokerLogicServer* logicServer);
+		void update() override final;
+	};
+	class NonPreflopStage : public Stage
+	{
+	public:
+		NonPreflopStage(PokerLogicServer* logicServer, StageId id);
+		void update() override final;
+	};
+	class VictoryStage : public Stage
+	{
+	public:
+		VictoryStage(PokerLogicServer* logicServer);
+		void update() override final;
+		
+	private:
+		void identifyWinners();
+
+		vector<Player*> winners;
 	};
 
 	class Command;
@@ -125,7 +149,8 @@ private:
 	class CmdClientDecisionRequest : public ExecutableCommand
 	{
 	public:
-		CmdClientDecisionRequest(PokerLogicServer* logicServer, const AnsiString& strCmd = "") : ExecutableCommand(logicServer, strCmd) {}
+		CmdClientDecisionRequest(PokerLogicServer* logicServer, const AnsiString& strCmd) : ExecutableCommand(logicServer, strCmd) {}
+		CmdClientDecisionRequest(const Player* player, const AnsiString& buttonsNotation);
 		void execute() override final;
 	};
 	class CmdHideGui : public Command
@@ -143,9 +168,15 @@ private:
 	public:
 		CmdSetCards(const Player* player);
 	};
-	class CmdSetBoardCards : public Command
+	class CmdOpenBoardCards : public Command
 	{
-		CmdSetBoardCards(const vector<Card>& cards);
+	public:
+		CmdOpenBoardCards(TableInfo& table, StageId stageId);
+	};
+	class CmdSetWinners : public Command
+	{
+	public:
+		CmdSetWinners(const vector<const Player*>& players, Balance pot);
 	};
 
 public:
@@ -157,7 +188,7 @@ private:
 	void notifyObservers(const EventMessageString &message = "") override;
 
 private:
-	StageContext stageContext;
+	StageContext stageContext = StageContext(this);
 	TableInfo table;
 
 	bool gameStarted = false;

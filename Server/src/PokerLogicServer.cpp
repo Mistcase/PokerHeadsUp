@@ -13,13 +13,6 @@ void PokerLogicServer::handleMessage(const AnsiString &message)
 		return;
 
 	ExecutableCommand::Create(message, this)->execute();
-
-	//Update players cards info
-	if (gameStarted)
-	{
-		for (const auto player : table.players.getPlayersData())
-			sendCommand(ptr_command(new CmdSetCards(player)));
-	}
 }
 
 void PokerLogicServer::sendCommand(ptr_command command)
@@ -38,30 +31,41 @@ void PokerLogicServer::notifyObservers(const EventMessageString &message)
 
 
 //Stages
-AnsiString PokerLogicServer::StageContext::update(TableInfo& table)
+void PokerLogicServer::StageContext::update()
 {
+	TableInfo& table = logicServer->table;
 	PlayersRingQueue *players = &table.players;
 	Player *currentPlayer = players->front();
 
-	AnsiString retVal;
 	if (!players->allBetsAreEaqual() || table.interviewedPlayers < players->size())
 	{
-		if (players->activePlayersCount() <= 1)
-			return "GameOver";
-
 		while (!players->front()->isActive())
 			players->pop();
 
-		retVal = stage->identifyPlayerAction();
+		if (players->activePlayersCount() <= 1)
+		{
+			logicServer->sendCommand(ptr_command(new CmdSetWinners({players->front()}, table.pot)));
+			setStage(new VictoryStage(logicServer));
+			stage->update();
+			return;
+		}
+
+		stage->update();
 	}
 	else
 	{
-		setStage(new NonPreflopStage(table, *this));
-		return update(table);
+		//////////////////////////////////////////////////////////
+		int stageId = stage->getId();
+
+		if (stageId == StageId::STAGE_RIVER)
+			setStage(new VictoryStage(logicServer));
+		else
+			setStage(new NonPreflopStage(logicServer, static_cast<StageId>(stageId + 1)));
+
+		update();
+		return;
 	}
 	table.interviewedPlayers++;
-
-	return retVal;
 }
 
 void PokerLogicServer::StageContext::setStage(Stage * newStage)
@@ -70,20 +74,35 @@ void PokerLogicServer::StageContext::setStage(Stage * newStage)
 }
 
 
-PokerLogicServer::Stage::~Stage()
+PokerLogicServer::Stage::Stage(PokerLogicServer * logicServer)
+	: logicServer(logicServer)
 {
-	for (auto player : table->players.getPlayersData())
-		table->pot += player->getCurrentBet();
-	table->players.zeroAllBets();
+	TableInfo& table = logicServer->table;
+	for (auto player : table.players.getPlayersData())
+		table.pot += player->getCurrentBet();
+
+	table.players.zeroAllBets();
+
+	table.currentMaxBet = 0;
+	table.interviewedPlayers = 0;
+}
+
+PokerLogicServer::StageId PokerLogicServer::Stage::getId()
+{
+	return id;
 }
 
 
 
 
-PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext& stageContext) : Stage(table, stageContext)
+PokerLogicServer::PreflopStage::PreflopStage(PokerLogicServer* logicServer)
+	: Stage(logicServer)
 {
 	std::cout << "PREFLOP STAGE!\n";
 
+	id = StageId::STAGE_PREFLOP;
+
+	TableInfo& table = logicServer->table;
 	Deck& deck = table.deck;
 	deck = Deck();
 	deck.shuffle();
@@ -94,6 +113,7 @@ PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext& sta
 		player->setActive(true);
 		player->removeAllActions();
 		player->setCards(deck.removeTopCard(), deck.removeTopCard());
+		logicServer->sendCommand(ptr_command(new CmdSetCards(player)));
 	}
 
 	//Set button player
@@ -103,8 +123,8 @@ PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext& sta
 	Balance smallBlind = table.smallBlind;
 	table.sb = players.front();
 	table.sb->makeBet(smallBlind);
-	//players.pop();
-
+	table.pot = 0;
+	
 	//Now it is big blind
 	table.bb = players.next();
 	table.bb->makeBet(2 * smallBlind);
@@ -113,37 +133,30 @@ PokerLogicServer::PreflopStage::PreflopStage(TableInfo &table, StageContext& sta
 		players.pop();
 	table.currentMaxBet = 2 * smallBlind;
 
-	//Now players.front() is player after button(small blind)
+	logicServer->sendCommand(ptr_command(new CmdStartHand(logicServer)));
 }
 
-AnsiString PokerLogicServer::PreflopStage::identifyPlayerAction(const AnsiString &params)
+void PokerLogicServer::PreflopStage::update()
 {
-	PlayersRingQueue *players = &table->players;
+	TableInfo& table = logicServer->table;
+	PlayersRingQueue *players = &table.players;
 	Player *currentPlayer = players->front();
 
-	if (currentPlayer == table->bb)
-	{
-
-		return Notifications::CreateNofiticationMessage("MakeDecision",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			AnsiString("ButtonMode:") + (players->allBetsAreEaqual() ? "CHECK_RAISE" : "CALL_RAISE_FOLD"),
-		});
-	}
+	if (currentPlayer == table.bb)
+		logicServer->sendCommand(ptr_command(new CmdClientDecisionRequest(currentPlayer, (players->allBetsAreEaqual() ? "CHECK_RAISE" : "CALL_RAISE_FOLD"))));
 	else
-	{
-		return Notifications::CreateNofiticationMessage("MakeDecision",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			"ButtonMode:CALL_RAISE_FOLD",
-		});
-	}
+		logicServer->sendCommand(ptr_command(new CmdClientDecisionRequest(currentPlayer, "CALL_RAISE_FOLD")));
 }
 
 
-PokerLogicServer::NonPreflopStage::NonPreflopStage(TableInfo &table, StageContext& stageContext) : Stage(table, stageContext)
+PokerLogicServer::NonPreflopStage::NonPreflopStage(PokerLogicServer* logicServer, StageId id) : Stage(logicServer)
 {
 	std::cout << "New nonflop STAGE!\n";
+	this->id = id;
+
+	logicServer->sendCommand(ptr_command(new CmdOpenBoardCards(logicServer->table, id)));
+
+	TableInfo& table = logicServer->table;
 	table.currentMaxBet = 0;
 	table.interviewedPlayers = 0;
 
@@ -152,27 +165,13 @@ PokerLogicServer::NonPreflopStage::NonPreflopStage(TableInfo &table, StageContex
 		players.pop();
 }
 
-AnsiString PokerLogicServer::NonPreflopStage::identifyPlayerAction(const AnsiString &params)
+void PokerLogicServer::NonPreflopStage::update()
 {
-	PlayersRingQueue *players = &table->players;
+	TableInfo& table = logicServer->table;
+	PlayersRingQueue *players = &table.players;
 	Player *currentPlayer = players->front();
 
-	if (currentPlayer->getCurrentBet() < table->currentMaxBet)
-	{
-		return Notifications::CreateNofiticationMessage("MakeDecision",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			"ButtonMode:CALL_RAISE_FOLD",
-		});
-	}
-	else
-	{
-		return Notifications::CreateNofiticationMessage("MakeDecision",
-		{
-			"Player:" + currentPlayer->getNickname(),
-			"ButtonMode:CHECK_BET",
-		});
-	}
+	logicServer->sendCommand(ptr_command(new CmdClientDecisionRequest(currentPlayer, (currentPlayer->getCurrentBet() < table.currentMaxBet) ? "CALL_RAISE_FOLD" : "CHECK_BET")));
 }
 
 
@@ -194,8 +193,6 @@ AnsiString PokerLogicServer::Command::str()
 {
 	return cmd;
 }
-
-
 
 
 
@@ -224,14 +221,23 @@ void PokerLogicServer::CmdNewConnection::execute()
 
 	if (logicServer->gameStarted)
 	{
-		logicServer->stageContext.setStage(new PreflopStage(table, logicServer->stageContext));
 		logicServer->sendCommand(ptr_command(new CmdStartGame));
-		logicServer->sendCommand(ptr_command(new CmdStartHand(logicServer)));
+		logicServer->stageContext.setStage(new PreflopStage(logicServer));
 		logicServer->sendCommand(ptr_command(new CmdTableInfo(logicServer)));
-		logicServer->notifyObservers(logicServer->stageContext.update(table));
+		logicServer->stageContext.update();
+		//logicServer->notifyObservers(logicServer->stageContext.update());
 	}
 }
 
+PokerLogicServer::CmdClientDecisionRequest::CmdClientDecisionRequest(const Player* player, const AnsiString& buttonsNotation)
+	: ExecutableCommand(nullptr, "")
+{
+	cmd = Notifications::CreateNofiticationMessage("MakeDecision", 
+	{
+		"Player:" + player->getNickname(),
+		"ButtonMode:" + buttonsNotation,
+	});
+}
 
 void PokerLogicServer::CmdClientDecisionRequest::execute()
 {
@@ -276,7 +282,7 @@ void PokerLogicServer::CmdClientDecisionRequest::execute()
 	logicServer->sendCommand(ptr_command(new CmdHideGui));
 	table.players.pop();
 
-	logicServer->notifyObservers(logicServer->stageContext.update(table));
+	logicServer->stageContext.update();
 	logicServer->sendCommand(ptr_command(new CmdTableInfo(logicServer))); //Send table info after stage updating
 }
 
@@ -344,4 +350,119 @@ PokerLogicServer::CmdStartHand::CmdStartHand(PokerLogicServer * logicServer)
 		"bbp:" + table.bb->getNickname(),
 		"sbv:" + to_string(table.smallBlind),
 	});
+}
+
+
+PokerLogicServer::CmdOpenBoardCards::CmdOpenBoardCards(TableInfo & table, StageId stageId)
+{
+	AnsiString stage;
+	vector<size_t> cardsIndexes;
+	switch (stageId)
+	{
+	case PokerLogicServer::STAGE_FLOP:
+		stage = "Flop";
+		cardsIndexes = { 0, 1, 2 };
+		break;
+
+	case PokerLogicServer::STAGE_TURN:
+		stage = "Turn";
+		cardsIndexes = { 3 };
+		break;
+
+	case PokerLogicServer::STAGE_RIVER:
+		stage = "River";
+		cardsIndexes = { 4 };
+		break;
+
+	default:
+		stage = "STAGE_UNKNOWN(ERROR)";
+		break;
+	}
+
+	AnsiString cardsStringArgs;
+	for (size_t index : cardsIndexes)
+	{
+		table.boardCards[index] = table.deck.removeTopCard();
+		cardsStringArgs += "CardValue" + to_string(index) + ":" + to_string(table.boardCards[index].getValue()) + "|";
+		cardsStringArgs += "CardSuit" + to_string(index) + ":" + to_string(table.boardCards[index].getSuit()) + "|";
+	}
+
+	cmd = Notifications::CreateNofiticationMessage("OpenBoardCards", "Stage:" + stage + "|" + cardsStringArgs);
+}
+
+
+PokerLogicServer::CmdSetWinners::CmdSetWinners(const vector<const Player*>& players, Balance pot)
+{
+	AnsiString allPlayers;
+
+	for (size_t i = 0; i < players.size(); i++)
+		allPlayers += "Player" + to_string(i) + ":" + players[i]->getNickname() + "|";
+
+	cmd = Notifications::CreateNofiticationMessage("SetWinners",
+	{
+		"Count:" + to_string(players.size()),
+		"Gain:" + to_string(pot / players.size()),
+		allPlayers
+	});
+}
+
+
+PokerLogicServer::VictoryStage::VictoryStage(PokerLogicServer * logicServer)
+	: Stage(logicServer)
+{
+	id = STAGE_WINNER_EXISTS;
+}
+
+void PokerLogicServer::VictoryStage::update()
+{
+	TableInfo& table = logicServer->table;
+	auto& players = table.players;
+
+	if (players.activePlayersCount() > 1)
+	{
+		//Identify Winner
+		identifyWinners();
+		for (auto winner : winners)
+			winner->setBalance(winner->getBalance() + table.pot / winners.size());
+	}
+
+	if (players.activePlayersCount() == 1)
+	{
+		Player* frontPlayer = players.front();
+		frontPlayer->setBalance(frontPlayer->getBalance() + table.pot);
+	}
+
+	players.pop();
+
+	auto& stageContext = logicServer->stageContext;
+	stageContext.setStage(new PreflopStage(logicServer));
+	stageContext.update();
+}
+
+void PokerLogicServer::VictoryStage::identifyWinners()
+{
+	TableInfo& table = logicServer->table;
+
+	typedef pair<Player*, CombinationIdentifier::Combination> PlayerCombination;
+	vector<PlayerCombination> pCombinations;
+	for (const auto player : table.players.getPlayersData())
+		pCombinations.emplace_back(PlayerCombination(player, CombinationIdentifier(player->getCards(), table.boardCards).identify()));
+
+	for (const auto& playerComb : pCombinations)
+	{
+		bool flag = true;
+		for (const auto& subComb : pCombinations)
+		{
+			if (&playerComb == &subComb)
+				continue;
+
+			if (playerComb.second < subComb.second)
+			{
+				flag = false;
+				break;
+			}
+		}
+		if (flag)
+			winners.emplace_back(playerComb.first);
+	}
 }

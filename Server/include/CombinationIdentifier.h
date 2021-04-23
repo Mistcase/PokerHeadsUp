@@ -9,6 +9,7 @@
 
 using std::find;
 using std::find_if;
+using std::mismatch;
 using std::sort;
 using std::vector;
 
@@ -40,6 +41,8 @@ public:
 	{
 		poker_combs::Combinations combValue = poker_combs::COMBINATION_NONE;
 		vector<Card> combCards, kickers;
+
+		bool operator<(const Combination& other) const;
 	};
 
 	struct FlushState
@@ -57,6 +60,9 @@ public:
 
 	CombinationIdentifier(const PlayerHand& hand, const BoardCards& board);
 	Combination identify();
+
+	CombinationIdentifier(CombinationIdentifier&) = delete;
+	CombinationIdentifier(CombinationIdentifier&&) = delete;
 
 private:
 	void determinateRCState();

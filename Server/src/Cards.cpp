@@ -21,12 +21,17 @@ bool Card::isEaqualValue(const Card& other)
 	return value == other.value;
 }
 
-bool Card::operator==(const Card& other)
+bool Card::operator<(const Card & other) const
+{
+	return value < other.value;
+}
+
+bool Card::operator==(const Card& other) const
 {
 	return value == other.value && suit == other.suit;
 }
 
-bool Card::operator>(const Card& other)
+bool Card::operator>(const Card& other) const
 {
 	return value > other.value;
 }

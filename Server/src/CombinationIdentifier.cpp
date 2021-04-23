@@ -322,3 +322,24 @@ void CombinationIdentifier::initStraights()
 }
 
 array<array<CardValue, STRAIGHT_CARDS_COUNT>, STRAIGHT_POSSIBLE_VARIATIONS_COUNT> CombinationIdentifier::STRAIGHTS;
+
+bool CombinationIdentifier::Combination::operator<(const Combination & other) const
+{
+	if (combValue < other.combValue)
+		return true;
+
+	if (combValue == other.combValue)
+	{
+		//Compare cards
+		auto cResult = mismatch(combCards.cbegin(), combCards.cend(), other.combCards.cbegin(), other.combCards.cend());
+		if (!(cResult.first == combCards.end() && cResult.second == other.combCards.end()))
+			return (*cResult.first < *cResult.second);
+
+		//Compare kickers
+		auto kResult = mismatch(kickers.cbegin(), kickers.cend(), other.kickers.cbegin(), other.kickers.cend());
+		if (!(kResult.first == kickers.end() && kResult.second == other.kickers.end()))
+			return (*kResult.first < *kResult.second);
+	}
+
+	return false;
+}

@@ -111,7 +111,7 @@ bool GameState::sfmlGraphicsInit()
 	Vector2f currentCardPoint = Vector2f(APPLICATION_WINDOW_SIZE.x / 2 - cardsShape.x / 2, APPLICATION_WINDOW_SIZE.y / 2 - cardsShape.y / 2);
 	for (int i = 0; i < BOARD_CARDS_COUNT; i++)
 	{
-		boardCards[i].setFillColor(Color(255, 255, 255, 50));
+		boardCards[i].setFillColor(Color::Transparent);
 		//boardCards[i].setOutlineColor(Color::White);
 		//boardCards[i].setOutlineThickness(1.f);
 		boardCards[i].setSize(GAMESTATE_CARD_SIZE);
@@ -119,7 +119,7 @@ bool GameState::sfmlGraphicsInit()
 		currentCardPoint.x += GAMESTATE_CARD_SIZE.x + CARDS_DISTANCE;
 	}
 
-
+	potPosition = MultiplyVector(APPLICATION_WINDOW_SIZE, 0.5f);
 	pot.setFont(ApplicationFonts::getFont(ApplicationFonts::ARIAL));
 	pot.setCharacterSize(16);
 	pot.setString("Pot: 0");
@@ -156,7 +156,7 @@ void GameState::updateGui(float deltaTime, const Vector2f &mousePos)
 void GameState::updateGraphicsEntities()
 {
 	auto potParams = pot.getGlobalBounds();
-	pot.setPosition(APPLICATION_WINDOW_SIZE.x / 2 - potParams.width / 2, APPLICATION_WINDOW_SIZE.y / 2 - potParams.height / 2);
+	pot.setPosition(potPosition.x - potParams.width / 2, potPosition.y - potParams.height / 2);
 }
 
 Player *GameState::getPlayer(const AnsiString &nickname) const
@@ -294,6 +294,10 @@ GameState::ptr_command GameState::Command::Create(const AnsiString & cmd, GameSt
 		return ptr_command(new CmdPlayerDecisionRequest(cmd, gs));
 	if (action == "HideGui")
 		return ptr_command(new CmdHideGui(gs));
+	if (action == "OpenBoardCards")
+		return ptr_command(new CmdOpenBoardCards(cmd, gs));
+	if (action == "SetWinners")
+		return ptr_command(new CmdSetWinners(cmd, gs));
 
 	throw std::exception(AnsiString("Unknown command was received from server: " + action).c_str());
 }
@@ -324,6 +328,11 @@ void GameState::CmdStartGame::execute()
 
 void GameState::CmdStartHand::execute()
 {
+	gameState->potPosition = MultiplyVector(APPLICATION_WINDOW_SIZE, 0.5f);
+
+	for (auto& boardCard : gameState->boardCards)
+		boardCard.setFillColor(Color::Transparent);
+
 	AnsiString player = Notifications::GetNotificationNamedArg(cmd, "button");
 	if (player == gameState->localPlayer.getNickname())
 		gameState->tableButton.setTableSlot(table_slots::BOTTOM);
@@ -336,13 +345,13 @@ void GameState::CmdStartHand::execute()
 		bbp = Notifications::GetNotificationNamedArg(cmd, "bbp"),
 		sbv = Notifications::GetNotificationNamedArg(cmd, "sbv");
 
-	int smallBlind = ToInt(sbv.c_str());
+	int smallBlind = ToInt(sbv);
 
 	Player* sbPlayer = gameState->getPlayer(sbp);
 	Player* bbPlayer = gameState->getPlayer(bbp);
 
-	sbPlayer->makeBet(smallBlind);
-	bbPlayer->makeBet(2 * smallBlind);
+	sbPlayer->setBet(smallBlind);
+	bbPlayer->setBet(2 * smallBlind);
 }
 
 void GameState::CmdPlayerDecisionRequest::execute()
@@ -381,6 +390,9 @@ void GameState::CmdSetCards::execute()
 	{
 		val[i] = static_cast<Deck::CardsValuesGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardValue" + to_string(i))) - 1);
 		suit[i] = static_cast<Deck::CardsSuitsGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardSuit" + to_string(i))) - 1);
+
+		if (val[i] == Deck::CardsValuesGraphicsId::GI_ACE_TOP)
+			val[i] = Deck::CardsValuesGraphicsId::GI_ACE;
 	}
 	gameState->localPlayer.setCards(Card(val[0], suit[0]), Card(val[1], suit[1]));
 }
@@ -401,8 +413,30 @@ void GameState::CmdOpenBoardCards::execute()
 
 	for (size_t index : cardsIndexes)
 	{
-		Deck::setCard(&gameState->boardCards[index],
-			static_cast<Deck::CardsValuesGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardValue" + to_string(index))) - 1),
+		auto& card = gameState->boardCards[index];
+		auto cardValue = static_cast<Deck::CardsValuesGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardValue" + to_string(index))) - 1);
+
+		Deck::setCard(&card,
+			cardValue == Deck::CardsValuesGraphicsId::GI_ACE_TOP ? Deck::CardsValuesGraphicsId::GI_ACE : cardValue,
 			static_cast<Deck::CardsSuitsGraphicsId>(ToInt(Notifications::GetNotificationNamedArg(cmd, "CardSuit" + to_string(index))) - 1));
+		card.setFillColor(Color::White);
+	}
+
+	gameState->potPosition = MultiplyVector(APPLICATION_WINDOW_SIZE, 0.5f) + Vector2f(0, GAMESTATE_CARD_SIZE.y / 2 + 20.f);
+}
+
+void GameState::CmdSetWinners::execute()
+{
+	size_t winnersCount = ToInt(Notifications::GetNotificationNamedArg(cmd, "Count"));
+	Balance gain = ToInt(Notifications::GetNotificationNamedArg(cmd, "Gain"));
+
+	for (int i = 0; i < winnersCount; i++)
+	{
+		AnsiString winnerName = Notifications::GetNotificationNamedArg(cmd, "Player" + to_string(i));
+
+		Player* winner = gameState->getPlayer(winnerName);
+
+		if (winner == nullptr)
+			SfmlMessageBox("Unknown winner name: " + winnerName, "Error").show();
 	}
 }

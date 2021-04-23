@@ -97,6 +97,12 @@ private:
 		CmdOpenBoardCards(const AnsiString& cmd, GameState* gs) : Command(cmd, gs) {}
 		void execute() override final;
 	};
+	class CmdSetWinners : public Command
+	{
+	public:
+		CmdSetWinners(const AnsiString& cmd, GameState* gs) : Command(cmd, gs) {}
+		void execute() override final;
+	};
 
 public:
 	const size_t BOARD_CARDS_COUNT = 5;
@@ -149,7 +155,10 @@ private:
 	//Graphics
 	Texture backgroundTexture, cardShirtTexture;
 	RectangleShape background, boardCards[5];
+
 	Text pot;
+	Vector2f potPosition;
+
 	Button buttonPrototype, buttons[BTN_COUNT];
 	TextBox raiseTextBox;
 

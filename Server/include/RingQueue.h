@@ -23,6 +23,7 @@ public:
     bool playerExists(const AnsiString& name) const;
     bool allBetsAreEaqual() const;
     size_t activePlayersCount() const;
+	Balance getAllBets() const;
 
     size_t size() const;
     const vector<Player*>& getPlayersData() const;

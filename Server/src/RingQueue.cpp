@@ -62,6 +62,14 @@ size_t PlayersRingQueue::activePlayersCount() const
     return result;
 }
 
+Balance PlayersRingQueue::getAllBets() const
+{
+	Balance result = 0;
+	for (const auto& player : players)
+		result += player->getCurrentBet();
+	return result;
+}
+
 size_t PlayersRingQueue::size() const
 {
     return players.size();
