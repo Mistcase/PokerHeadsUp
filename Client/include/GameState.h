@@ -131,7 +131,6 @@ protected:
 
 private:
 	//Functional
-
 	Player* getPlayer(const AnsiString& nickname) const;
 
 private:
@@ -142,7 +141,7 @@ private:
 
 	//void handleNetworkEvent(const EventMessageString& message);
 	void handleGuiEvent(const EventMessage& message);
-	void showButtons(const AnsiString &buttonsNotation);
+	void showControls(const AnsiString &buttonsNotation);
 
 private:
 	//Initialization

@@ -23,6 +23,7 @@ public:
     bool playerExists(const AnsiString& name) const;
     bool allBetsAreEaqual() const;
     size_t activePlayersCount() const;
+	size_t nonZeroStackPlayersCount() const;
 	Balance getAllBets() const;
 
     size_t size() const;

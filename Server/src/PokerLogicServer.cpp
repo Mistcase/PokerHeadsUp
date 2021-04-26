@@ -1,5 +1,4 @@
 #include "PokerLogicServer.h"
-#include <iostream>
 
 void PokerLogicServer::setPlayersCount(size_t count)
 {
@@ -51,21 +50,23 @@ void PokerLogicServer::StageContext::update()
 		}
 
 		stage->update();
+		table.interviewedPlayers++;
 	}
 	else
 	{
 		//////////////////////////////////////////////////////////
 		int stageId = stage->getId();
-
 		if (stageId == StageId::STAGE_RIVER)
+		{
 			setStage(new VictoryStage(logicServer));
+			stage->update();
+		}
 		else
+		{
 			setStage(new NonPreflopStage(logicServer, static_cast<StageId>(stageId + 1)));
-
-		update();
-		return;
+			update();
+		}
 	}
-	table.interviewedPlayers++;
 }
 
 void PokerLogicServer::StageContext::setStage(Stage * newStage)
@@ -98,8 +99,6 @@ PokerLogicServer::StageId PokerLogicServer::Stage::getId()
 PokerLogicServer::PreflopStage::PreflopStage(PokerLogicServer* logicServer)
 	: Stage(logicServer)
 {
-	std::cout << "PREFLOP STAGE!\n";
-
 	id = StageId::STAGE_PREFLOP;
 
 	TableInfo& table = logicServer->table;
@@ -151,10 +150,9 @@ void PokerLogicServer::PreflopStage::update()
 
 PokerLogicServer::NonPreflopStage::NonPreflopStage(PokerLogicServer* logicServer, StageId id) : Stage(logicServer)
 {
-	std::cout << "New nonflop STAGE!\n";
 	this->id = id;
 
-	logicServer->sendCommand(ptr_command(new CmdOpenBoardCards(logicServer->table, id)));
+	logicServer->sendCommand(ptr_command(new CmdOpenBoardCards(logicServer->table, id))); //Uncorrect	
 
 	TableInfo& table = logicServer->table;
 	table.currentMaxBet = 0;
@@ -163,6 +161,8 @@ PokerLogicServer::NonPreflopStage::NonPreflopStage(PokerLogicServer* logicServer
 	auto& players = table.players;
 	while (players.front() != table.sb)
 		players.pop();
+
+	//std::this_thread::sleep_for(std::chrono::seconds(2));
 }
 
 void PokerLogicServer::NonPreflopStage::update()
@@ -186,7 +186,7 @@ PokerLogicServer::ptr_executable_command PokerLogicServer::ExecutableCommand::Cr
 	if (action == "ClientDecision")
 		return ptr_executable_command(new CmdClientDecisionRequest(logicServer, cmd));
 
-	throw std::exception("Unknown command was received from client!");
+	throw runtime_error("Unknown command was received from client!");
 }
 
 AnsiString PokerLogicServer::Command::str()

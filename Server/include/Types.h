@@ -6,6 +6,7 @@
 #include <map>
 #include <utility>
 #include <memory>
+#include <stdexcept>
 
 typedef std::string AnsiString;
 
@@ -13,5 +14,9 @@ using std::to_string;
 using std::map;
 using std::pair;
 using std::shared_ptr;
+
+using std::exception;
+using std::runtime_error;
+
 
 #endif

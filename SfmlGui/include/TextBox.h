@@ -37,6 +37,7 @@ public:
 	void updateEvent(sf::Event &ev);
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
+	bool active = true;
 private:
 	sf::RectangleShape shape;
 	sf::Text text, defaultText, cursor;

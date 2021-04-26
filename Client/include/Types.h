@@ -11,6 +11,7 @@
 #include <array>
 #include <utility>
 #include <memory>
+#include <stdexcept>
 
 using namespace sfml_gui;
 
@@ -24,6 +25,9 @@ using std::to_string;
 using sf::String;
 using sf::Vector2f;
 using sf::Vector2u;
+
+using std::exception;
+using std::runtime_error;
 
 
 using sf::Drawable;

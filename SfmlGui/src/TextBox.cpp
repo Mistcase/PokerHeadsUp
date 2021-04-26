@@ -85,6 +85,9 @@ void sfml_gui::TextBox::updateEvent(sf::Event & ev)
 
 void sfml_gui::TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
+	if (!active)
+		return;
+
 	const sf::Text& drawableText = text.getString().isEmpty() && !isSelected ? defaultText : text;
 
 	target.draw(shape, states);

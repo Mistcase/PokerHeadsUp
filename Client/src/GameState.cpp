@@ -26,7 +26,7 @@ void GameState::handleEvent(const EventMessage &message)
 		{
 			Command::Create(message.params, this)->execute();
 		}
-		catch (std::exception& ex)
+		catch (const exception& ex)
 		{
 			std::cout << ex.what() << std::endl;
 		}
@@ -85,6 +85,7 @@ bool GameState::guiInit()
 
 	raiseTextBox = TextBox(Vector2f(680, 520), Vector2f(100, 20), Color(128, 128, 128), Color::Black, 1.f, "Bet/Raise value",
 	ApplicationFonts::ARIAL, Color::Black);
+	raiseTextBox.active = false;
 
 	return true;
 }
@@ -183,7 +184,7 @@ void GameState::handleGuiEvent(const EventMessage &message)
 	netClient.sendMessage(CmdPlayerDecisionRequest(args).str());
 }
 
-void GameState::showButtons(const AnsiString & buttonsNotation)
+void GameState::showControls(const AnsiString & buttonsNotation)
 {
 	auto findPositionForButton = [&]() {
 		const sf::Vector2f OFFSET = GAMESTATE_BUTTON_SIZE + sf::Vector2f(5.f, 0);
@@ -202,6 +203,7 @@ void GameState::showButtons(const AnsiString & buttonsNotation)
 
 	for (auto &btn : buttons)
 		btn.active = false;
+	raiseTextBox.active = false;
 
 	if (buttonsNotation == "None")
 		return;
@@ -237,6 +239,8 @@ void GameState::showButtons(const AnsiString & buttonsNotation)
 	{
 		SfmlMessageBox("Unknown buttons notation: " + buttonsNotation, "Error").show();
 	}
+
+	raiseTextBox.active = true;
 };
 
 void GameState::update(float deltaTime, const Vector2f &mousePos)
@@ -299,12 +303,12 @@ GameState::ptr_command GameState::Command::Create(const AnsiString & cmd, GameSt
 	if (action == "SetWinners")
 		return ptr_command(new CmdSetWinners(cmd, gs));
 
-	throw std::exception(AnsiString("Unknown command was received from server: " + action).c_str());
+	throw runtime_error(AnsiString("Unknown command was received from server: " + action).c_str());
 }
 
 void GameState::CmdNewConnection::execute()
 {
-	throw std::exception("Cannot execute command -> CmdNewConnection");
+	throw runtime_error("Cannot execute command -> CmdNewConnection");
 }
 
 void GameState::CmdSetPlayers::execute()
@@ -357,12 +361,12 @@ void GameState::CmdStartHand::execute()
 void GameState::CmdPlayerDecisionRequest::execute()
 {
 	if (Notifications::GetNotificationNamedArg(cmd, "Player") == gameState->localPlayer.getNickname())
-		gameState->showButtons(Notifications::GetNotificationNamedArg(cmd, "ButtonMode"));
+		gameState->showControls(Notifications::GetNotificationNamedArg(cmd, "ButtonMode"));
 }
 
 void GameState::CmdHideGui::execute()
 {
-	gameState->showButtons("None");
+	gameState->showControls("None");
 }
 
 void GameState::CmdSetTable::execute()
